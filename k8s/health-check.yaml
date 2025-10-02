@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rccremote-health-config
+  namespace: rccremote
+data:
+  health-check.sh: |
+    #!/bin/sh
+    # Health check script for RCC Remote service
+    set -e
+    
+    ENDPOINT=${1:-/health/live}
+    HOST=${2:-localhost}
+    PORT=${3:-4653}
+    
+    response=$(curl -s -o /dev/null -w "%{http_code}" http://${HOST}:${PORT}${ENDPOINT} || echo "000")
+    
+    if [ "$response" = "200" ]; then
+      echo "Health check passed: ${ENDPOINT} returned 200"
+      exit 0
+    else
+      echo "Health check failed: ${ENDPOINT} returned ${response}"
+      exit 1
+    fi
+  
+  startup-check.sh: |
+    #!/bin/sh
+    # Startup check - verifies all required services are initialized
+    set -e
+    
+    # Check if RCC is available
+    if ! command -v rcc > /dev/null 2>&1; then
+      echo "ERROR: rcc command not found"
+      exit 1
+    fi
+    
+    # Check if rccremote is available
+    if ! command -v rccremote > /dev/null 2>&1; then
+      echo "ERROR: rccremote command not found"
+      exit 1
+    fi
+    
+    # Check if holotree is initialized
+    if [ ! -d "$ROBOCORP_HOME" ]; then
+      echo "ERROR: ROBOCORP_HOME directory not found: $ROBOCORP_HOME"
+      exit 1
+    fi
+    
+    echo "Startup checks passed"
+    exit 0
+  
+  readiness-check.sh: |
+    #!/bin/sh
+    # Readiness check - verifies service can accept requests
+    set -e
+    
+    # Check if rccremote is listening on port 4653
+    if ! nc -z localhost 4653; then
+      echo "ERROR: rccremote not listening on port 4653"
+      exit 1
+    fi
+    
+    # Check if health endpoint responds
+    response=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4653/health/ready || echo "000")
+    
+    if [ "$response" = "200" ]; then
+      echo "Readiness check passed"
+      exit 0
+    else
+      echo "Readiness check failed: health endpoint returned ${response}"
+      exit 1
+    fi

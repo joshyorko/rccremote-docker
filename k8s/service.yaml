@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rccremote
+  namespace: rccremote
+  labels:
+    app: rccremote
+spec:
+  type: ClusterIP
+  selector:
+    app: rccremote
+  ports:
+  - name: https
+    port: 443
+    targetPort: 443
+    protocol: TCP
+  - name: rccremote
+    port: 4653
+    targetPort: 4653
+    protocol: TCP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rccremote-lb
+  namespace: rccremote
+  labels:
+    app: rccremote
+  annotations:
+    service.beta.kubernetes.io/load-balancer-source-ranges: "0.0.0.0/0"
+spec:
+  type: LoadBalancer
+  selector:
+    app: rccremote
+  ports:
+  - name: https
+    port: 443
+    targetPort: 443
+    protocol: TCP
+  sessionAffinity: ClientIP
