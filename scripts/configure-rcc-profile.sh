@@ -34,6 +34,38 @@ check_prerequisites() {
     fi
 }
 
+setup_robocorp_home() {
+    local target_home="${ROBOCORP_HOME:-/opt/robocorp}"
+    
+    log "Setting up ROBOCORP_HOME at $target_home..."
+    
+    if [ ! -d "$target_home" ]; then
+        log "Creating $target_home directory..."
+        if [ -w "$(dirname "$target_home")" ]; then
+            mkdir -p "$target_home"
+        else
+            log "Need elevated permissions to create $target_home"
+            sudo mkdir -p "$target_home"
+            sudo chown -R $USER:$USER "$target_home"
+        fi
+    fi
+    
+    # Ensure we have write permissions
+    if [ ! -w "$target_home" ]; then
+        log "Adjusting permissions for $target_home..."
+        sudo chown -R $USER:$USER "$target_home"
+    fi
+    
+    # Enable shared holotree at this location
+    log "Enabling shared holotree at $target_home..."
+    ROBOCORP_HOME="$target_home" rcc holotree shared --enable || warn "Could not enable shared holotree (may already be enabled)"
+    
+    log "ROBOCORP_HOME setup completed ✓"
+    
+    # Export for current session
+    export ROBOCORP_HOME="$target_home"
+}
+
 configure_ssl_profile() {
     log "Configuring RCC SSL profile..."
     
@@ -121,6 +153,7 @@ main() {
     log "=========================="
     
     check_prerequisites
+    setup_robocorp_home
     configure_ssl_profile
     
     echo ""
@@ -129,8 +162,16 @@ main() {
     
     echo ""
     log "Configuration complete!"
-    log "You can now use: export RCC_REMOTE_ORIGIN=https://rccremote.local:8443"
-    log "And test with: rcc holotree vars"
+    log "ROBOCORP_HOME is set to: $ROBOCORP_HOME"
+    log ""
+    log "Add these to your shell profile (~/.bashrc or ~/.zshrc):"
+    echo "  export ROBOCORP_HOME=$ROBOCORP_HOME"
+    echo "  export RCC_REMOTE_ORIGIN=https://rccremote.local:8443"
+    log ""
+    log "Or use them in your current session:"
+    echo "  export ROBOCORP_HOME=$ROBOCORP_HOME"
+    echo "  export RCC_REMOTE_ORIGIN=https://rccremote.local:8443"
+    echo "  rcc holotree vars"
 }
 
 main "$@"
