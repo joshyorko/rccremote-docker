@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  rccremote:
+    build:
+      context: ..
+      dockerfile: Dockerfile-rcc
+    container_name: rccremote-dev
+    hostname: rccremote
+    command: ["rccremote"]
+    environment:
+      - SERVER_NAME=${SERVER_NAME:-rccremote.local}
+      - ROBOCORP_HOME=/opt/robocorp
+      - RCC_REMOTE_ORIGIN=https://${SERVER_NAME:-rccremote.local}:8443
+    volumes:
+      - ../data/robots:/robots:ro
+      - ../data/hololib_zip:/hololib_zip:ro
+      - hololib_zip_internal:/hololib_zip_internal
+      - robocorp_data:/opt/robocorp
+      - ../scripts:/scripts:ro
+      - certs:/etc/certs
+    networks:
+      - rccremote-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4653/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: rccremote-nginx-dev
+    ports:
+      - "8443:443"
+    environment:
+      - SERVER_NAME=${SERVER_NAME:-rccremote.local}
+    volumes:
+      - ../config/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - certs:/etc/nginx/certs:ro
+    depends_on:
+      rccremote:
+        condition: service_healthy
+    networks:
+      - rccremote-network
+    command: >
+      sh -c "
+        if [ ! -f /etc/nginx/certs/server.crt ] || [ ! -f /etc/nginx/certs/server.key ]; then
+          echo 'Generating self-signed certificates for development...';
+          apk add --no-cache openssl;
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout /etc/nginx/certs/server.key \
+            -out /etc/nginx/certs/server.crt \
+            -subj '/CN=${SERVER_NAME:-rccremote.local}/O=RCCRemote Dev/C=US' \
+            -addext 'subjectAltName=DNS:${SERVER_NAME:-rccremote.local},DNS:*.${SERVER_NAME:-rccremote.local},DNS:localhost';
+          cp /etc/nginx/certs/server.crt /etc/nginx/certs/rootCA.pem;
+          echo 'Self-signed certificates generated successfully';
+        fi &&
+        /docker-entrypoint.sh nginx -g 'daemon off;'
+      "
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "https://localhost:443/health/live", "--no-check-certificate"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # Optional RCC test client container (uncomment to use)
+  # rcc:
+  #   build:
+  #     context: ..
+  #     dockerfile: Dockerfile-rcc
+  #   container_name: rcc-test-client
+  #   command: ["rcc"]
+  #   environment:
+  #     - RCC_REMOTE_ORIGIN=https://rccremote.local:8443
+  #     - SERVER_NAME=${SERVER_NAME:-rccremote.local}
+  #   volumes:
+  #     - ../data/robots:/robots:ro
+  #     - certs:/etc/certs:ro
+  #     - robotmk_rcc_home:/opt/robotmk/rcc_home
+  #     - ../scripts:/scripts:ro
+  #   depends_on:
+  #     nginx:
+  #       condition: service_healthy
+  #   networks:
+  #     - rccremote-network
+  #   restart: "no"
+
+volumes:
+  robocorp_data:
+    driver: local
+  hololib_zip_internal:
+    driver: local
+  robotmk_rcc_home:
+    driver: local
+  certs:
+    driver: local
+
+networks:
+  rccremote-network:
+    driver: bridge
