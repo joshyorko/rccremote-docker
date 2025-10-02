@@ -45,7 +45,7 @@ services:
       - ./scripts/entrypoint-nginx.sh:/docker-entrypoint.d/entrypoint-nginx.sh
       - ./scripts/openssl.cnf.template:/openssl.cnf.template
     ports:
-      - "443:443"
+      - "${NGINX_PORT:-8443}:443"
     environment:
       - SERVER_NAME=${SERVER_NAME}
     networks:
