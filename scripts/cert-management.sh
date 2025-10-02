@@ -5,8 +5,11 @@
 
 set -e
 
+# Get script directory for relative paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Default values
-CERT_DIR="${CERT_DIR:-../certs}"
+CERT_DIR="${CERT_DIR:-$SCRIPT_DIR/../certs}"
 SERVER_NAME="${SERVER_NAME:-rccremote.local}"
 VALIDITY_DAYS="${VALIDITY_DAYS:-365}"
 KEY_SIZE="${KEY_SIZE:-2048}"
