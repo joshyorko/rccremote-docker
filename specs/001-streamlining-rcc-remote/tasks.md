@@ -52,10 +52,10 @@ Container orchestration project with Kubernetes manifests, Docker Compose files,
 - [x] T028 RCC connectivity testing script in scripts/test-connectivity.sh
 
 ## Phase 3.7: Health Endpoints Implementation
-- [ ] T029 Liveness probe endpoint implementation for /health/live
-- [ ] T030 Readiness probe endpoint implementation for /health/ready
-- [ ] T031 Startup probe endpoint implementation for /health/startup
-- [ ] T032 Prometheus metrics endpoint implementation for /metrics
+- [x] T029 Liveness probe endpoint implementation for /health/live
+- [x] T030 Readiness probe endpoint implementation for /health/ready
+- [x] T031 Startup probe endpoint implementation for /health/startup
+- [x] T032 Prometheus metrics endpoint implementation for /metrics
 
 ## Phase 3.8: Documentation & User Guides
 - [x] T033 [P] Comprehensive deployment guide in docs/deployment-guide.md
