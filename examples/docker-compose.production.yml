@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  rccremote:
+    image: rccremote:latest
+    container_name: rccremote-prod
+    hostname: rccremote
+    command: ["rccremote"]
+    environment:
+      - SERVER_NAME=${SERVER_NAME}
+      - ROBOCORP_HOME=/opt/robocorp
+      - RCC_REMOTE_ORIGIN=https://${SERVER_NAME}:443
+    volumes:
+      - ${ROBOTS_PATH:-./data/robots}:/robots:ro
+      - ${HOLOLIB_ZIP_PATH:-./data/hololib_zip}:/hololib_zip:ro
+      - hololib_zip_internal:/hololib_zip_internal
+      - robocorp_data:/opt/robocorp
+      - ${SCRIPTS_PATH:-./scripts}:/scripts:ro
+      - ${CERTS_PATH:-./certs}:/etc/certs:ro
+    networks:
+      - rccremote-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4653/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: false
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+  nginx:
+    image: nginx:alpine
+    container_name: rccremote-nginx-prod
+    ports:
+      - "443:443"
+    environment:
+      - SERVER_NAME=${SERVER_NAME}
+    volumes:
+      - ${CONFIG_PATH:-./config}/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ${CERTS_PATH:-./certs}:/etc/nginx/certs:ro
+    depends_on:
+      rccremote:
+        condition: service_healthy
+    networks:
+      - rccremote-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "https://localhost:443/health/live", "--no-check-certificate"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+      - NET_BIND_SERVICE
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: false
+
+volumes:
+  robocorp_data:
+    driver: local
+  hololib_zip_internal:
+    driver: local
+
+networks:
+  rccremote-network:
+    driver: bridge
+
+# Production deployment notes:
+# 1. Ensure SERVER_NAME environment variable is set
+# 2. Provide custom certificates in ${CERTS_PATH}/server.crt and ${CERTS_PATH}/server.key
+# 3. Mount rootCA.pem in ${CERTS_PATH} for certificate verification
+# 4. Configure volume paths according to your infrastructure
+# 5. Consider using Docker Swarm or Kubernetes for HA and scaling
+# 6. Set up monitoring and alerting for production use
+# 7. Regular certificate rotation and backup procedures

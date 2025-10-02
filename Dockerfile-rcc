@@ -34,7 +34,7 @@ RUN apt-get install -y libxcb-shm0\
     libdrm2\
     libgbm1
 
-RUN wget https://downloads.robocorp.com/rcc/releases/v17.28.4/linux64/rcc && wget https://downloads.robocorp.com/rcc/releases/v17.18.0/linux64/rccremote
+RUN wget https://github.com/joshyorko/rcc/releases/download/v18.7.0/rcc-linux64 -O rcc && wget https://downloads.robocorp.com/rcc/releases/v17.18.0/linux64/rccremote
 RUN chmod +x rcc rccremote && mv rcc rccremote /usr/bin
 
 ENTRYPOINT [ "/scripts/entrypoint-rcc.sh" ]

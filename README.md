@@ -1,6 +1,49 @@
 # rccremote-docker
 
-Docker-compose setup with SSL for [rccremote](https://sema4.ai/docs/automation/rcc/overview).
+Enterprise-ready Docker and Kubernetes deployment for [RCC Remote](https://sema4.ai/docs/automation/rcc/overview) with SSL/TLS, automated certificate management, horizontal scaling, and comprehensive monitoring.
+
+## 📚 Documentation
+
+For comprehensive deployment guides and advanced configurations, see:
+
+- **[Deployment Guide](docs/deployment-guide.md)** - Complete deployment instructions for Docker Compose and Kubernetes
+- **[Kubernetes Setup](docs/kubernetes-setup.md)** - Kubernetes-specific configuration and best practices
+- **[ARC Integration](docs/arc-integration.md)** - GitHub Actions Runner Controller integration
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+
+## 🚀 Quick Start
+
+Choose your deployment method:
+
+```bash
+# Docker Compose (Development)
+./scripts/deploy-docker.sh --environment development
+
+# Docker Compose (Production)
+./scripts/deploy-docker.sh --environment production
+
+# Kubernetes
+./scripts/deploy-k8s.sh --namespace rccremote --replicas 3
+```
+
+See [Deployment Guide](docs/deployment-guide.md) for detailed instructions.
+
+---
+
+## Overview
+
+Docker-compose and Kubernetes setup with SSL for [rccremote](https://sema4.ai/docs/automation/rcc/overview).
+
+### Key Features
+
+- **🔒 SSL/TLS Encryption** - Automated certificate generation and management
+- **📈 Horizontal Scaling** - Support for 100+ concurrent RCC clients with Kubernetes HPA
+- **🔄 High Availability** - 99.9% uptime target with multiple replicas and health probes
+- **🐳 Multi-Platform** - Docker Compose and Kubernetes deployment options
+- **🏥 Health Monitoring** - Comprehensive health checks and Prometheus metrics
+- **🎯 ARC Integration** - Native support for GitHub Actions Runner Controller
+- **⚡ Fast Deployment** - Sub-5-minute deployment from start to operational
+- **🛡️ Security Hardened** - Non-root containers, minimal privileges, network policies
 
 ```mermaid
 graph LR

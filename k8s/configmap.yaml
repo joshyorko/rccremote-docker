@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rccremote-config
+  namespace: rccremote
+data:
+  SERVER_NAME: "rccremote.local"
+  ROBOCORP_HOME: "/opt/robocorp"
+  HOLOLIB_ZIP_PATH: "/hololib_zip"
+  HOLOLIB_ZIP_PATH_INT: "/hololib_zip_internal"
+  ROBOTS_PATH: "/robots"
+  # RCC Remote configuration
+  RCCREMOTE_HOSTNAME: "0.0.0.0"
+  RCCREMOTE_PORT: "4653"
+  # Nginx configuration
+  NGINX_UPSTREAM: "rccremote:4653"
+  NGINX_PORT: "443"
