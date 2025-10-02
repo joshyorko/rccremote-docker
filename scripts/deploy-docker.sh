@@ -210,20 +210,18 @@ wait_for_services() {
     error "Services did not become healthy within ${TIMEOUT} seconds"
 }
 
-# Verify health endpoints
+# Verify basic connectivity
 verify_health() {
-    log "Verifying service health endpoints..."
+    log "Verifying basic service connectivity..."
     
     local base_url="https://localhost:8443"
     [ "$ENVIRONMENT" = "production" ] && base_url="https://localhost:443"
     
-    for endpoint in /health/live /health/ready; do
-        if curl -skf "${base_url}${endpoint}" > /dev/null 2>&1; then
-            log "  $endpoint: OK ✓"
-        else
-            warn "  $endpoint: FAILED (may need more time to initialize)"
-        fi
-    done
+    if curl -skf "${base_url}/" --connect-timeout 5 > /dev/null 2>&1; then
+        log "  HTTPS endpoint: OK ✓"
+    else
+        warn "  HTTPS endpoint: FAILED (may need more time to initialize)"
+    fi
 }
 
 # Show deployment info

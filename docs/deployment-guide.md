@@ -67,17 +67,25 @@ rcc client --HTTPS--> nginx:443 --HTTP--> rccremote:4653
 git clone https://github.com/yorko-io/rccremote-docker.git
 cd rccremote-docker
 
-# 2. Set server name
-export SERVER_NAME=rccremote.local
+# 2. Generate CA-signed certificates
+./scripts/cert-management.sh generate-ca-signed --server-name localhost
 
-# 3. Deploy
+# 3. Install CA certificate for RCC clients (REQUIRED)
+sudo cp certs/rootCA.crt /usr/local/share/ca-certificates/rccremote-ca.crt
+sudo update-ca-certificates
+
+# 4. Deploy
 ./scripts/deploy-docker.sh --environment development
 
-# 4. Verify
+# 5. Verify
 ./scripts/health-check.sh --target localhost:8443
+
+# 6. Test RCC connectivity
+export RCC_REMOTE_ORIGIN=https://localhost:8443
+rcc holotree vars
 ```
 
-Your RCC Remote is now running at `https://rccremote.local:8443`
+Your RCC Remote is now running at `https://localhost:8443` with proper SSL verification!
 
 ## Docker Compose Deployment
 
@@ -125,12 +133,16 @@ Edit `examples/docker-compose.development.yml` to customize:
 # 1. Prepare certificates
 ./scripts/cert-management.sh generate-ca-signed --server-name your-domain.com
 
-# 2. Configure environment
+# 2. Install CA certificate to system trust store (REQUIRED for RCC clients)
+sudo cp certs/rootCA.crt /usr/local/share/ca-certificates/rccremote-ca.crt
+sudo update-ca-certificates
+
+# 3. Configure environment
 export SERVER_NAME=your-domain.com
 export ROBOTS_PATH=/path/to/robots
 export CERTS_PATH=/path/to/certs
 
-# 3. Deploy
+# 4. Deploy
 ./scripts/deploy-docker.sh --environment production
 ```
 
@@ -259,6 +271,39 @@ Generate with:
 ./scripts/cert-management.sh generate-ca-signed \
   --server-name your-domain.com \
   --validity 730
+```
+
+#### CA Certificate Installation (REQUIRED for RCC Clients)
+
+After generating CA-signed certificates, the Root CA certificate **must** be installed to the system trust store on machines running RCC clients. This enables proper SSL verification without disabling security.
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo cp certs/rootCA.crt /usr/local/share/ca-certificates/rccremote-ca.crt
+sudo update-ca-certificates
+```
+
+**Linux (RHEL/CentOS):**
+```bash
+sudo cp certs/rootCA.crt /etc/pki/ca-trust/source/anchors/rccremote-ca.crt
+sudo update-ca-trust
+```
+
+**macOS:**
+```bash
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain certs/rootCA.crt
+```
+
+**Windows (PowerShell as Administrator):**
+```powershell
+certutil -addstore -f "ROOT" certs\rootCA.crt
+```
+
+**Verification:**
+After installation, test RCC connectivity:
+```bash
+export RCC_REMOTE_ORIGIN=https://localhost:8443
+rcc holotree vars  # Should work without SSL errors
 ```
 
 ## Security
