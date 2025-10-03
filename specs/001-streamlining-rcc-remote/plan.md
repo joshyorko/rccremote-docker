@@ -83,7 +83,7 @@ k8s/
 ├── persistent-volume.yaml
 └── health-check.yaml
 
-examples/
+docker-compose/
 ├── docker-compose.production.yml
 ├── docker-compose.development.yml
 └── k8s-complete-example/

@@ -58,8 +58,10 @@ RCC client containers auto-configure SSL profiles based on certificate presence:
 - `./data/hololib_zip/` → `/hololib_zip`: Pre-built catalog imports
 - `./certs/` → `/etc/certs`: SSL certificates
 - `hololib_zip_internal`: Internal build artifacts
-- `robocorp_data`: Shared holotree data at `/opt/robocorp`
+- `robocorp_data`: Shared holotree data at `/opt/robocorp` (server-side only)
 - `robotmk_rcc_home`: RCC home directories at `/opt/robotmk/rcc_home`
+
+**Note**: Client machines use the default `~/.robocorp` location and don't need ROBOCORP_HOME set.
 
 ## Development Commands
 

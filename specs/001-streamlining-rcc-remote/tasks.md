@@ -12,7 +12,7 @@ Container orchestration project with Kubernetes manifests, Docker Compose files,
 
 ## Phase 3.1: Infrastructure Setup
 - [x] T001 Create Kubernetes manifest structure in k8s/ directory
-- [x] T002 [P] Initialize examples/ directory with Docker Compose variants  
+- [x] T002 [P] Initialize docker-compose/ directory with Docker Compose variants  
 - [x] T003 [P] Create scripts/ directory structure for deployment automation
 - [x] T004 [P] Initialize docs/ directory for comprehensive documentation
 
@@ -36,9 +36,9 @@ Container orchestration project with Kubernetes manifests, Docker Compose files,
 - [x] T018 [P] Health check configuration in k8s/health-check.yaml
 
 ## Phase 3.4: Docker Compose Variants
-- [x] T019 [P] Development Docker Compose with auto-generated certs in examples/docker-compose.development.yml
-- [x] T020 [P] Production Docker Compose with custom certs in examples/docker-compose.production.yml
-- [x] T021 [P] Complete Kubernetes example deployment in examples/k8s-complete-example/
+- [x] T019 [P] Development Docker Compose with auto-generated certs in docker-compose/docker-compose.development.yml
+- [x] T020 [P] Production Docker Compose with custom certs in docker-compose/docker-compose.production.yml
+- [x] T021 [P] Complete Kubernetes example deployment in docker-compose/k8s-complete-example/
 
 ## Phase 3.5: Security & Certificate Management
 - [x] T022 Enhanced certificate generation script in scripts/cert-management.sh

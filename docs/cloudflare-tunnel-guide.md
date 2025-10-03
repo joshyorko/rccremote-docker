@@ -66,7 +66,7 @@ export SERVER_NAME="rccremote.joshyorko.com"
 
 ```bash
 cd /path/to/rccremote-docker
-docker compose -f examples/docker-compose.cloudflare.yml up -d
+docker compose -f docker-compose/docker-compose.cloudflare.yml up -d
 ```
 
 ### 5. Verify Deployment
@@ -74,7 +74,7 @@ docker compose -f examples/docker-compose.cloudflare.yml up -d
 Check service health:
 
 ```bash
-docker compose -f examples/docker-compose.cloudflare.yml ps
+docker compose -f docker-compose/docker-compose.cloudflare.yml ps
 docker logs rccremote-cloudflared
 ```
 
@@ -91,22 +91,14 @@ curl -I https://rccremote.joshyorko.com
 Since Cloudflare uses a trusted CA, clients don't need custom SSL configuration:
 
 ```bash
-# Set environment variables
+# Set environment variable
 export RCC_REMOTE_ORIGIN=https://rccremote.joshyorko.com
-export ROBOCORP_HOME=/opt/robocorp
-
-# Create the directory if it doesn't exist
-sudo mkdir -p /opt/robocorp
-sudo chown -R $USER:$USER /opt/robocorp
-
-# Enable shared holotree
-rcc holotree shared --enable
 
 # Test
-rcc holotree vars
+rcc holotree catalogs
 ```
 
-That's it! No certificate installation, no custom profiles needed.
+That's it! No certificate installation, no custom profiles needed. RCC will use your default `~/.robocorp` directory.
 
 ### Optional: Add to Shell Profile
 
@@ -137,7 +129,7 @@ export ROBOCORP_HOME=/opt/robocorp
 
 ```bash
 # All services
-docker compose -f examples/docker-compose.cloudflare.yml logs -f
+docker compose -f docker-compose/docker-compose.cloudflare.yml logs -f
 
 # RCC Remote only
 docker logs rccremote-cf -f
@@ -149,14 +141,14 @@ docker logs rccremote-cloudflared -f
 ### Stop Services
 
 ```bash
-docker compose -f examples/docker-compose.cloudflare.yml down
+docker compose -f docker-compose/docker-compose.cloudflare.yml down
 ```
 
 ### Update and Restart
 
 ```bash
-docker compose -f examples/docker-compose.cloudflare.yml pull
-docker compose -f examples/docker-compose.cloudflare.yml up -d
+docker compose -f docker-compose/docker-compose.cloudflare.yml pull
+docker compose -f docker-compose/docker-compose.cloudflare.yml up -d
 ```
 
 ## Troubleshooting

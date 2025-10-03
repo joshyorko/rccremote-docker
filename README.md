@@ -22,12 +22,11 @@ Choose your deployment method:
 # Configure RCC client (REQUIRED - run on each client machine)
 ./scripts/configure-rcc-profile.sh
 
-# Set environment variables (add to ~/.bashrc or ~/.zshrc for persistence)
-export ROBOCORP_HOME=/opt/robocorp
+# Set environment variable (add to ~/.bashrc or ~/.zshrc for persistence)
 export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
 
 # Test connectivity
-rcc holotree vars
+rcc holotree catalogs
 
 # Docker Compose (Production)
 ./scripts/deploy-docker.sh --environment production
@@ -151,11 +150,10 @@ After deploying the server, configure RCC clients to use it:
 ./scripts/configure-rcc-profile.sh
 
 # Add to ~/.bashrc or ~/.zshrc for persistence
-export ROBOCORP_HOME=/opt/robocorp
 export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
 
 # Test connectivity
-rcc holotree vars
+rcc holotree catalogs
 ```
 
 See [Quick Start Guide](docs/QUICKSTART.md) and [Deployment Guide](docs/deployment-guide.md) for detailed step-by-step instructions.
@@ -213,7 +211,7 @@ To change the holotree path, the Robot folders can contain a `.env` file:
 ROBOCORP_HOME=/robotmk/rcc_home/current_user
 ```
 
-(For examples, see `./data/robots-examples/`).
+(For examples, see `./data/robots-docker-compose/`).
 
 Before each build, **rcc** sources this file so that the Catalog is built against a custom `ROBOCORP_HOME`.
 After each environment creation, the environment gets exported into a ZIP file (volume: hololib_zip_internal).

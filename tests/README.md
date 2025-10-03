@@ -147,7 +147,7 @@ Ensure the target service is running:
 curl -k https://localhost:8443/health/live
 
 # Start development environment
-docker-compose -f examples/docker-compose.development.yml up -d
+docker-compose -f docker-compose/docker-compose.development.yml up -d
 ```
 
 ### k3d Tests Fail

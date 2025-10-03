@@ -107,30 +107,29 @@ rcc version
 
 ### 6. Configure RCC Client (REQUIRED)
 
-This step configures RCC to use the same paths as the RCC Remote server and sets up SSL verification:
+This step configures RCC to trust the Root CA certificate for secure SSL communication:
 
 ```bash
 ./scripts/configure-rcc-profile.sh
 ```
 
 **What this does:**
-- Creates `/opt/robocorp` as the shared ROBOCORP_HOME location
-- Enables shared holotree at this location
 - Configures SSL profile with the Root CA certificate
 - Sets up proper certificate verification
+- Uses your default `~/.robocorp` directory (no special permissions needed)
 
-**Make environment variables persistent:**
+**Make environment variable persistent:**
 Add to your shell profile (`~/.bashrc` or `~/.zshrc`):
 ```bash
-export ROBOCORP_HOME=/opt/robocorp
 export RCC_REMOTE_ORIGIN=https://localhost:8443
 ```
 
 **For current session only:**
 ```bash
-export ROBOCORP_HOME=/opt/robocorp
 export RCC_REMOTE_ORIGIN=https://localhost:8443
 ```
+
+**Note**: The client uses the default `~/.robocorp` location. The `/opt/robocorp` path is only used inside the rccremote container.
 
 ### 7. Test RCC Connectivity
 
@@ -197,12 +196,11 @@ If you've built catalogs on a different platform (e.g., Windows), you can import
 Make sure:
 1. The Root CA certificate is installed in your system's trust store (step 2)
 2. You've run `./scripts/configure-rcc-profile.sh` to set up RCC configuration (step 6)
-3. The environment variables are set: `ROBOCORP_HOME=/opt/robocorp` and `RCC_REMOTE_ORIGIN=https://localhost:8443`
+3. The environment variable is set: `RCC_REMOTE_ORIGIN=https://localhost:8443`
 
 ### RCC builds locally instead of fetching from remote
 
 This can happen if:
-- The `ROBOCORP_HOME` path doesn't match between client and server (should be `/opt/robocorp`)
 - The `configure-rcc-profile.sh` script hasn't been run
 - The exact environment doesn't exist in the remote catalogs yet
 - RCC Remote is not accessible

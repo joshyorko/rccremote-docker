@@ -35,32 +35,18 @@ check_prerequisites() {
 }
 
 setup_robocorp_home() {
-    local target_home="${ROBOCORP_HOME:-/opt/robocorp}"
+    # Use default ROBOCORP_HOME if not set (user's home directory)
+    local target_home="${ROBOCORP_HOME:-$HOME/.robocorp}"
     
-    log "Setting up ROBOCORP_HOME at $target_home..."
+    log "Using ROBOCORP_HOME: $target_home"
     
+    # Create directory if it doesn't exist
     if [ ! -d "$target_home" ]; then
         log "Creating $target_home directory..."
-        if [ -w "$(dirname "$target_home")" ]; then
-            mkdir -p "$target_home"
-        else
-            log "Need elevated permissions to create $target_home"
-            sudo mkdir -p "$target_home"
-            sudo chown -R $USER:$USER "$target_home"
-        fi
+        mkdir -p "$target_home"
     fi
     
-    # Ensure we have write permissions
-    if [ ! -w "$target_home" ]; then
-        log "Adjusting permissions for $target_home..."
-        sudo chown -R $USER:$USER "$target_home"
-    fi
-    
-    # Enable shared holotree at this location
-    log "Enabling shared holotree at $target_home..."
-    ROBOCORP_HOME="$target_home" rcc holotree shared --enable || warn "Could not enable shared holotree (may already be enabled)"
-    
-    log "ROBOCORP_HOME setup completed ✓"
+    log "ROBOCORP_HOME ready ✓"
     
     # Export for current session
     export ROBOCORP_HOME="$target_home"
@@ -162,16 +148,15 @@ main() {
     
     echo ""
     log "Configuration complete!"
-    log "ROBOCORP_HOME is set to: $ROBOCORP_HOME"
     log ""
-    log "Add these to your shell profile (~/.bashrc or ~/.zshrc):"
-    echo "  export ROBOCORP_HOME=$ROBOCORP_HOME"
+    log "To use the RCC Remote server, add this to your shell profile (~/.bashrc or ~/.zshrc):"
     echo "  export RCC_REMOTE_ORIGIN=https://rccremote.local:8443"
     log ""
-    log "Or use them in your current session:"
-    echo "  export ROBOCORP_HOME=$ROBOCORP_HOME"
+    log "Or set it in your current session:"
     echo "  export RCC_REMOTE_ORIGIN=https://rccremote.local:8443"
-    echo "  rcc holotree vars"
+    log ""
+    log "Then test with:"
+    echo "  rcc holotree catalogs"
 }
 
 main "$@"

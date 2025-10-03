@@ -66,11 +66,11 @@ validate_infrastructure() {
     fi
     
     # Check Docker Compose files
-    if [[ ! -f "$repo_root/examples/docker-compose.development.yml" ]]; then
+    if [[ ! -f "$repo_root/docker-compose/docker-compose.development.yml" ]]; then
         error "Missing docker-compose.development.yml"
     fi
     
-    if [[ ! -f "$repo_root/examples/docker-compose.production.yml" ]]; then
+    if [[ ! -f "$repo_root/docker-compose/docker-compose.production.yml" ]]; then
         error "Missing docker-compose.production.yml"
     fi
     

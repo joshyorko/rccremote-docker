@@ -109,7 +109,7 @@ Your RCC Remote is now running at `https://localhost:8443` with proper SSL verif
 
 ```bash
 # Deploy
-docker-compose -f examples/docker-compose.development.yml up -d
+docker-compose -f docker-compose/docker-compose.development.yml up -d
 
 # Or use deployment script
 ./scripts/deploy-docker.sh --environment development
@@ -124,7 +124,7 @@ export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
 
 #### Configuration
 
-Edit `examples/docker-compose.development.yml` to customize:
+Edit `docker-compose/docker-compose.development.yml` to customize:
 - Port mappings
 - Volume mounts
 - Resource limits
@@ -543,7 +543,7 @@ docker stats
 
 **Docker Compose:**
 ```bash
-docker-compose -f examples/docker-compose.production.yml logs -f
+docker-compose -f docker-compose/docker-compose.production.yml logs -f
 ```
 
 **Kubernetes:**

@@ -124,7 +124,7 @@ See `/k8s/README.md` for deployment instructions.
 ### Common Variables (All Configs)
 
 - `SERVER_NAME` - DNS name for the server (default: `rccremote.local`)
-- `ROBOCORP_HOME` - Holotree base path (default: `/opt/robocorp`)
+- `ROBOCORP_HOME` - Holotree base path inside the rccremote container (default: `/opt/robocorp`)
 - `RCC_REMOTE_ORIGIN` - URL for RCC clients to connect
 
 ### Production-Specific Variables
@@ -145,22 +145,22 @@ See `/k8s/README.md` for deployment instructions.
 After deploying the server, **every RCC client machine must be configured**:
 
 ```bash
-# Run the configuration script
+# Run the configuration script (one-time setup)
 ./scripts/configure-rcc-profile.sh
 
 # Add to shell profile (~/.bashrc or ~/.zshrc)
-export ROBOCORP_HOME=/opt/robocorp
 export RCC_REMOTE_ORIGIN=https://rccremote.local:8443  # Or your server URL
 
 # Test connectivity
-rcc holotree vars
+rcc holotree catalogs
 ```
 
 This script:
-1. Creates `/opt/robocorp` directory with proper permissions
-2. Enables shared holotree at this location
-3. Configures SSL profile with Root CA certificate
-4. Sets up proper certificate verification
+1. Configures SSL profile with Root CA certificate for secure communication
+2. Sets up proper certificate verification
+3. Uses your default `~/.robocorp` directory (no special permissions needed)
+
+**Note**: The client uses the default `~/.robocorp` location. The `/opt/robocorp` path is only used inside the rccremote container.
 
 ## Common Commands
 
@@ -215,7 +215,6 @@ docker compose -f docker-compose/docker-compose.production.yml down -v
 - Solution: Run client configuration script
   ```bash
   ./scripts/configure-rcc-profile.sh
-  export ROBOCORP_HOME=/opt/robocorp
   export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
   ```
 

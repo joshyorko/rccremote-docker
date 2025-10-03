@@ -220,7 +220,7 @@ tests/integration/test_k8s_deployment.sh
 
 ### New Directories
 - `k8s/` - Kubernetes manifests
-- `examples/` - Docker Compose variants
+- `docker-compose/` - Docker Compose variants
 - `docs/` - Comprehensive documentation
 - `tests/` - Complete test suite (contract, integration, load, validation)
 
@@ -235,11 +235,11 @@ tests/integration/test_k8s_deployment.sh
 - k8s/service.yaml
 - k8s/ingress.yaml
 - k8s/health-check.yaml
-- examples/k8s-complete-example/README.md (+ symlinks)
+- docker-compose/k8s-complete-example/README.md (+ symlinks)
 
 **Docker Compose (2 files)**
-- examples/docker-compose.development.yml
-- examples/docker-compose.production.yml
+- docker-compose/docker-compose.development.yml
+- docker-compose/docker-compose.production.yml
 
 **Scripts (6 files)**
 - scripts/deploy-k8s.sh
