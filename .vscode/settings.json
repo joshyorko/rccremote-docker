@@ -1,5 +1,5 @@
 {
     "python.analysis.extraPaths": [
-        "/workspaces/rccremote-docker/."
+        "/workspaces/https---github-com-yorko-io-rccremote-docker/data/robots/rf5/."
     ]
 }

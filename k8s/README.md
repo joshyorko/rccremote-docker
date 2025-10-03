@@ -1,10 +1,29 @@
-# Complete Kubernetes Example for RCC Remote
+# Kubernetes Manifests for RCC Remote
 
-This directory contains a complete, ready-to-deploy example of RCC Remote on Kubernetes.
+This directory contains production-ready Kubernetes manifests for deploying RCC Remote with high availability, auto-scaling, and comprehensive health checks.
 
 ## Quick Deployment
 
+### Option 1: Using the Deployment Script (Recommended)
+
 ```bash
+# From project root
+./scripts/deploy-k8s.sh --namespace rccremote --replicas 3
+
+# With custom settings
+./scripts/deploy-k8s.sh \
+  --namespace automation \
+  --replicas 5 \
+  --environment production \
+  --timeout 600
+```
+
+### Option 2: Manual kubectl Apply
+
+```bash
+# From project root
+cd k8s
+
 # 1. Create namespace
 kubectl apply -f namespace.yaml
 
@@ -16,6 +35,7 @@ kubectl apply -f persistent-volume.yaml
 # 3. Deploy application
 kubectl apply -f deployment.yaml
 kubectl apply -f service.yaml
+kubectl apply -f health-check.yaml
 
 # 4. Optional: Configure ingress
 kubectl apply -f ingress.yaml
@@ -23,18 +43,35 @@ kubectl apply -f ingress.yaml
 # 5. Verify deployment
 kubectl get pods -n rccremote
 kubectl get svc -n rccremote
+kubectl wait --for=condition=available deployment/rccremote -n rccremote --timeout=300s
 ```
 
-## Files Overview
+## Manifest Files
 
-- `namespace.yaml` - Creates the rccremote namespace
-- `configmap.yaml` - Environment variables and configuration
-- `secret.yaml` - TLS certificates (populate with your certs)
-- `persistent-volume.yaml` - Storage for holotree and hololib data
-- `deployment.yaml` - RCC Remote deployment with HPA
-- `service.yaml` - Kubernetes service for stable DNS
-- `ingress.yaml` - Optional ingress for external access
-- `deploy.sh` - Automated deployment script
+| File | Description | Required |
+|------|-------------|----------|
+| `namespace.yaml` | Creates the rccremote namespace | ✅ Yes |
+| `configmap.yaml` | Environment variables and configuration | ✅ Yes |
+| `secret.yaml` | TLS certificates placeholder | ✅ Yes |
+| `persistent-volume.yaml` | Storage for holotree and hololib data | ✅ Yes |
+| `deployment.yaml` | RCC Remote deployment with auto-scaling | ✅ Yes |
+| `service.yaml` | Kubernetes service for stable DNS | ✅ Yes |
+| `health-check.yaml` | Health check jobs and monitoring | ⚠️ Optional |
+| `ingress.yaml` | External access configuration | ⚠️ Optional |
+
+## Architecture
+
+```
+Internet/Clients
+       ↓
+   [Ingress] (optional)
+       ↓
+   [Service: rccremote.rccremote.svc.cluster.local:443]
+       ↓
+   [Deployment: 3-10 replicas with HPA]
+       ↓
+   [PersistentVolume: holotree + hololib data]
+```
 
 ## Prerequisites
 

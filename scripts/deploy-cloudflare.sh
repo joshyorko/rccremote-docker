@@ -34,7 +34,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Configuration
-COMPOSE_FILE="${PROJECT_ROOT}/examples/docker-compose.cloudflare.yml"
+COMPOSE_FILE="${PROJECT_ROOT}/docker-compose/docker-compose.cloudflare.yml"
 DEFAULT_SERVER_NAME="rccremote.joshyorko.com"
 
 check_prerequisites() {

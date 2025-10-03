@@ -91,15 +91,15 @@ done
 # Determine compose file
 if [ -z "$COMPOSE_FILE" ]; then
     if [ "$ENVIRONMENT" = "production" ]; then
-        COMPOSE_FILE="../examples/docker-compose.production.yml"
+        COMPOSE_FILE="../docker-compose/docker-compose.production.yml"
     else
-        COMPOSE_FILE="../examples/docker-compose.development.yml"
+        COMPOSE_FILE="../docker-compose/docker-compose.development.yml"
     fi
 fi
 
 # Check if running from scripts directory
-if [ ! -f "$COMPOSE_FILE" ] && [ -f "examples/docker-compose.$ENVIRONMENT.yml" ]; then
-    COMPOSE_FILE="examples/docker-compose.$ENVIRONMENT.yml"
+if [ ! -f "$COMPOSE_FILE" ] && [ -f "docker-compose/docker-compose.$ENVIRONMENT.yml" ]; then
+    COMPOSE_FILE="docker-compose/docker-compose.$ENVIRONMENT.yml"
 fi
 
 # Validate prerequisites

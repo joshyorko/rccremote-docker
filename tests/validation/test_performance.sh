@@ -32,7 +32,7 @@ test_docker_deployment_time() {
     export SERVER_NAME=rccremote.local
     
     log "  Starting Docker Compose deployment..."
-    if docker compose -f examples/docker-compose.development.yml up -d >/dev/null 2>&1 || docker-compose -f examples/docker-compose.development.yml up -d >/dev/null 2>&1; then
+    if docker compose -f docker-compose/docker-compose.development.yml up -d >/dev/null 2>&1 || docker-compose -f docker-compose/docker-compose.development.yml up -d >/dev/null 2>&1; then
         log "  ✓ Docker Compose up command succeeded"
     else
         error "Docker Compose deployment failed"
@@ -63,7 +63,7 @@ test_docker_deployment_time() {
     local deployment_time=$((end_time - start_time))
     
     # Cleanup
-    docker compose -f examples/docker-compose.development.yml down -v >/dev/null 2>&1 || docker-compose -f examples/docker-compose.development.yml down -v >/dev/null 2>&1 || true
+    docker compose -f docker-compose/docker-compose.development.yml down -v >/dev/null 2>&1 || docker-compose -f docker-compose/docker-compose.development.yml down -v >/dev/null 2>&1 || true
     
     log ""
     log "=== Docker Compose Deployment Performance ==="
@@ -177,7 +177,7 @@ test_health_check_performance() {
     
     # Deploy a test instance first
     export SERVER_NAME=rccremote.local
-    docker compose -f examples/docker-compose.development.yml up -d >/dev/null 2>&1 || docker-compose -f examples/docker-compose.development.yml up -d >/dev/null 2>&1
+    docker compose -f docker-compose/docker-compose.development.yml up -d >/dev/null 2>&1 || docker-compose -f docker-compose/docker-compose.development.yml up -d >/dev/null 2>&1
     
     # Wait a bit for startup
     sleep 30
@@ -198,7 +198,7 @@ test_health_check_performance() {
     fi
     
     # Cleanup
-    docker compose -f examples/docker-compose.development.yml down -v >/dev/null 2>&1 || docker-compose -f examples/docker-compose.development.yml down -v >/dev/null 2>&1 || true
+    docker compose -f docker-compose/docker-compose.development.yml down -v >/dev/null 2>&1 || docker-compose -f docker-compose/docker-compose.development.yml down -v >/dev/null 2>&1 || true
 }
 
 # Main test flow

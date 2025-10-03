@@ -105,12 +105,36 @@ sudo mv rcc /usr/local/bin/
 rcc version
 ```
 
-### 6. Test RCC Connectivity
+### 6. Configure RCC Client (REQUIRED)
+
+This step configures RCC to use the same paths as the RCC Remote server and sets up SSL verification:
 
 ```bash
-# Set RCC Remote origin
-export RCC_REMOTE_ORIGIN=https://localhost:8443
+./scripts/configure-rcc-profile.sh
+```
 
+**What this does:**
+- Creates `/opt/robocorp` as the shared ROBOCORP_HOME location
+- Enables shared holotree at this location
+- Configures SSL profile with the Root CA certificate
+- Sets up proper certificate verification
+
+**Make environment variables persistent:**
+Add to your shell profile (`~/.bashrc` or `~/.zshrc`):
+```bash
+export ROBOCORP_HOME=/opt/robocorp
+export RCC_REMOTE_ORIGIN=https://localhost:8443
+```
+
+**For current session only:**
+```bash
+export ROBOCORP_HOME=/opt/robocorp
+export RCC_REMOTE_ORIGIN=https://localhost:8443
+```
+
+### 7. Test RCC Connectivity
+
+```bash
 # Disable telemetry (optional)
 rcc config identity -t
 
@@ -144,9 +168,8 @@ To make your robots available through RCC Remote:
 
 2. Restart the containers to rebuild catalogs:
    ```bash
-   cd scripts
-   docker compose -f ../examples/docker-compose.development.yml down
-   ./deploy-docker.sh --environment development
+   docker compose -f docker-compose/docker-compose.development.yml down
+   ./scripts/deploy-docker.sh --environment development
    ```
 
 3. Verify catalogs are available:
@@ -171,11 +194,16 @@ If you've built catalogs on a different platform (e.g., Windows), you can import
 
 ### RCC shows SSL errors
 
-Make sure the Root CA certificate is installed in your system's trust store (step 2).
+Make sure:
+1. The Root CA certificate is installed in your system's trust store (step 2)
+2. You've run `./scripts/configure-rcc-profile.sh` to set up RCC configuration (step 6)
+3. The environment variables are set: `ROBOCORP_HOME=/opt/robocorp` and `RCC_REMOTE_ORIGIN=https://localhost:8443`
 
 ### RCC builds locally instead of fetching from remote
 
 This can happen if:
+- The `ROBOCORP_HOME` path doesn't match between client and server (should be `/opt/robocorp`)
+- The `configure-rcc-profile.sh` script hasn't been run
 - The exact environment doesn't exist in the remote catalogs yet
 - RCC Remote is not accessible
 - The `RCC_REMOTE_ORIGIN` environment variable is not set

@@ -223,8 +223,8 @@ validate_docker_compose() {
     
     local repo_root="/home/runner/work/rccremote-docker/rccremote-docker"
     local compose_files=(
-        "examples/docker-compose.development.yml"
-        "examples/docker-compose.production.yml"
+        "docker-compose/docker-compose.development.yml"
+        "docker-compose/docker-compose.production.yml"
     )
     
     for compose_file in "${compose_files[@]}"; do

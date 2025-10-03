@@ -18,7 +18,7 @@ git checkout 001-streamlining-rcc-remote
 ### 2. Quick Start with Auto-Generated Certificates
 ```bash
 # Start with development configuration
-docker-compose -f examples/docker-compose.development.yml up -d
+docker-compose -f docker-compose/docker-compose.development.yml up -d
 
 # Verify deployment completed in <5 minutes
 scripts/health-check.sh --timeout=300

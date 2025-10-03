@@ -77,11 +77,17 @@ sudo update-ca-certificates
 # 4. Deploy
 ./scripts/deploy-docker.sh --environment development
 
-# 5. Verify
+# 5. Configure RCC client (REQUIRED)
+./scripts/configure-rcc-profile.sh
+
+# 6. Set environment variables for current session
+export ROBOCORP_HOME=/opt/robocorp
+export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
+
+# 7. Verify
 ./scripts/health-check.sh --target localhost:8443
 
-# 6. Test RCC connectivity
-export RCC_REMOTE_ORIGIN=https://localhost:8443
+# 8. Test RCC connectivity
 rcc holotree vars
 ```
 
@@ -107,6 +113,13 @@ docker-compose -f examples/docker-compose.development.yml up -d
 
 # Or use deployment script
 ./scripts/deploy-docker.sh --environment development
+
+# Configure RCC client (REQUIRED for first-time setup)
+./scripts/configure-rcc-profile.sh
+
+# Set environment variables
+export ROBOCORP_HOME=/opt/robocorp
+export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
 ```
 
 #### Configuration
@@ -144,6 +157,13 @@ export CERTS_PATH=/path/to/certs
 
 # 4. Deploy
 ./scripts/deploy-docker.sh --environment production
+
+# 5. Configure RCC clients (REQUIRED on each client machine)
+./scripts/configure-rcc-profile.sh
+
+# 6. Set environment variables (add to ~/.bashrc or ~/.zshrc)
+export ROBOCORP_HOME=/opt/robocorp
+export RCC_REMOTE_ORIGIN=https://your-domain.com:443
 ```
 
 #### Required Certificates
@@ -480,16 +500,23 @@ kubectl logs -n rccremote -l app=rccremote -c rccremote --tail 100
 
 #### 3. RCC Client Cannot Connect
 
-**Symptom:** `rcc holotree vars` fails
+**Symptom:** `rcc holotree vars` fails with path mismatch or SSL errors
 **Solution:**
 ```bash
+# First, configure RCC client properly (most common issue)
+./scripts/configure-rcc-profile.sh
+
+# Set environment variables
+export ROBOCORP_HOME=/opt/robocorp
+export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
+
 # Test connectivity
 ./scripts/test-connectivity.sh --origin https://rccremote.local:443
 
 # Check SSL configuration
 rcc config diag
 
-# Import CA certificate if needed
+# If still failing, import CA certificate manually
 ./scripts/cert-management.sh export
 # Follow instructions in client-export/README.md
 ```

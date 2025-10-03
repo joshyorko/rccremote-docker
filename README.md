@@ -19,6 +19,16 @@ Choose your deployment method:
 # Docker Compose (Development)
 ./scripts/deploy-docker.sh --environment development
 
+# Configure RCC client (REQUIRED - run on each client machine)
+./scripts/configure-rcc-profile.sh
+
+# Set environment variables (add to ~/.bashrc or ~/.zshrc for persistence)
+export ROBOCORP_HOME=/opt/robocorp
+export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
+
+# Test connectivity
+rcc holotree vars
+
 # Docker Compose (Production)
 ./scripts/deploy-docker.sh --environment production
 
@@ -26,7 +36,7 @@ Choose your deployment method:
 ./scripts/deploy-k8s.sh --namespace rccremote --replicas 3
 ```
 
-See [Deployment Guide](docs/deployment-guide.md) for detailed instructions.
+See [Quick Start Guide](docs/QUICKSTART.md) and [Deployment Guide](docs/deployment-guide.md) for detailed instructions.
 
 ---
 
@@ -76,9 +86,28 @@ This centralized approach does not only save network traffic and computing resou
 
 By default, **rccremote** operates unencrypted, meaning **rcc** cannot verify the connection, nor is the data transmission encrypted.  
 
-This setup provides a way to run RCCRemote behind a reverse proxy (nginx) which TLS encryption and server authentication. 
+This setup provides a way to run RCCRemote behind a reverse proxy (nginx) with TLS encryption and server authentication.
 
-### Terminlogy
+## Directory Structure
+
+```
+├── docker-compose/           # Docker Compose configurations
+│   ├── docker-compose.development.yml    # Development setup (port 8443)
+│   ├── docker-compose.production.yml     # Production setup (port 443)
+│   ├── docker-compose.cloudflare.yml     # Cloudflare Tunnel setup
+│   └── k8s-complete-example/             # Complete Kubernetes example
+├── k8s/                      # Kubernetes manifests
+├── scripts/                  # Deployment and utility scripts
+├── config/                   # Configuration templates
+├── docs/                     # Comprehensive documentation
+├── data/                     # Runtime data
+│   ├── robots/              # Robot definitions for building catalogs
+│   └── hololib_zip/         # Pre-built catalog imports
+└── certs/                    # SSL/TLS certificates
+
+```
+
+### Terminology
 
 RCC-internal concepts:
 
@@ -87,67 +116,79 @@ RCC-internal concepts:
 - **Holotree**: A **Collection** of currently available **spaces**.
   - **Space**: An instance of an environment. There is a one-to-many relation between catalog and space.
 
-## Quick Start 
+## Deployment
 
-### Option 1: Using own certificates 
+### Docker Compose
 
-Copy your certificate files into `/certs`:
+Choose the appropriate compose file from the `docker-compose/` directory:
 
-- Server certificate: 
-  - `server.crt` (X.509 compatible)
-  - `server.key` 
-- Root certificate: 
-  - `rootCA.pem` (if the server certificate is signed by a CA - recommended) - Note: the server certificate must contain the SAN (X509v3 Subject Alternative Name) attribute.
-
-### Option 2: Auto-created certificates
-
-There are two way which both are only meant for testing/demonstration purposes: 
-
-- auto-created self-signed
-- auto-created signed (with rootCA)
-
-#### auto-created self-signed
-
-If you want the **nginx** container to create a self-signed certificate, leave the `certs` folder empty.  
-Nginx will then create a self-signed certificate on the very first start. 
-
-#### auto-created signed
-
-If you want to use a signed certificate, you have to execute a generator script: 
-
-```
-cd scripts
-./create-signed-cert.sh
-SERVER_NAME is set to rccremote.local in .env file.
-Openssl configuration created successfully with server name rccremote.local (/tmp/tmp.JIFD8POnxX).
-Ready to generate the certificates now. This will empty the cert dir ../certs.
-=> Are you sure? (y/n)
+**Development (port 8443, auto-generated certificates):**
+```bash
+./scripts/deploy-docker.sh --environment development
 ```
 
-### Setting the server name
-
-Set the **server name** used in the certificate to the env variable `SERVER_NAME`: 
-
-- `export SERVER_NAME=rccremote.local`
-- OR 
-- edit the variable `SERVER_NAME` in `.env`
-
-### Starting the containers
-
-```
-docker compose up -d
+**Production (port 443, requires custom certificates):**
+```bash
+./scripts/deploy-docker.sh --environment production --server-name your-domain.com
 ```
 
-This will spin up 2 containers: 
+### Kubernetes
 
-- **rccremote** 
-- **nginx**
+Deploy to a Kubernetes cluster with high availability:
+```bash
+./scripts/deploy-k8s.sh --namespace rccremote --replicas 3
+```
 
-By default, the **rccremote** container does not serve any Catalogs. See next section how to add environments.
+### RCC Client Configuration (REQUIRED)
 
-## Usage
+After deploying the server, configure RCC clients to use it:
 
-There are basically two modes to add Catalogs by placing files into these folders: 
+```bash
+# Run on each client machine
+./scripts/configure-rcc-profile.sh
+
+# Add to ~/.bashrc or ~/.zshrc for persistence
+export ROBOCORP_HOME=/opt/robocorp
+export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
+
+# Test connectivity
+rcc holotree vars
+```
+
+See [Quick Start Guide](docs/QUICKSTART.md) and [Deployment Guide](docs/deployment-guide.md) for detailed step-by-step instructions.
+
+## Certificate Management
+
+### Auto-Generated (Development)
+
+The development setup automatically generates self-signed certificates if none are provided.
+
+### Custom Certificates (Production - Recommended)
+
+Generate CA-signed certificates for proper SSL verification:
+
+```bash
+./scripts/cert-management.sh generate-ca-signed --server-name your-domain.com
+```
+
+This creates:
+- `certs/rootCA.crt` - Root CA certificate (install on client machines)
+- `certs/server.crt` - Server certificate
+- `certs/server.key` - Server private key
+
+**Install Root CA on client machines:**
+
+Linux:
+```bash
+sudo cp certs/rootCA.crt /usr/local/share/ca-certificates/rccremote-ca.crt
+sudo update-ca-certificates
+```
+
+See [Deployment Guide - Certificate Management](docs/deployment-guide.md#certificate-management) for other platforms.
+
+## Adding Robot Catalogs
+
+There are two ways to add environment catalogs to RCC Remote: 
 
 - A) `./data/robots` - Containing Robot directories with `robot.yaml`/`conda.yaml`: **build and import** on startup
 - B) `./data/hololib_zip` - Containing ZIP files of exported Catalogs: **import** on startup

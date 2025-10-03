@@ -8,7 +8,7 @@ version: '3.8'
 # 2. Point it to http://rccremote:4653
 # 3. Get your tunnel token
 # 4. Set CF_TUNNEL_TOKEN in .env file or export it
-# 5. docker compose -f examples/docker-compose.cloudflare.yml up -d
+# 5. docker compose -f docker-compose/docker-compose.cloudflare.yml up -d
 #
 # Benefits:
 # - Trusted SSL certificate (no custom RCC profile needed!)
