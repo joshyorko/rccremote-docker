@@ -101,18 +101,13 @@ docker-compose/
 ├── README.md                          # This file
 ├── docker-compose.development.yml     # Development setup
 ├── docker-compose.production.yml      # Production setup
-├── docker-compose.cloudflare.yml      # Cloudflare Tunnel setup
-└── k8s-complete-example/              # Complete Kubernetes example
-    ├── README.md
-    ├── namespace.yaml
-    ├── configmap.yaml
-    ├── secret.yaml
-    ├── persistent-volume.yaml
-    ├── deployment.yaml
-    ├── service.yaml
-    ├── ingress.yaml
-    └── health-check.yaml
+└── docker-compose.cloudflare.yml      # Cloudflare Tunnel setup
 ```
+
+## Kubernetes Manifests
+
+Kubernetes deployment manifests are located in the `/k8s/` directory at the project root.
+See `/k8s/README.md` for deployment instructions.
 
 ## Comparison
 

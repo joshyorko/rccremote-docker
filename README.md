@@ -94,9 +94,12 @@ This setup provides a way to run RCCRemote behind a reverse proxy (nginx) with T
 ├── docker-compose/           # Docker Compose configurations
 │   ├── docker-compose.development.yml    # Development setup (port 8443)
 │   ├── docker-compose.production.yml     # Production setup (port 443)
-│   ├── docker-compose.cloudflare.yml     # Cloudflare Tunnel setup
-│   └── k8s-complete-example/             # Complete Kubernetes example
+│   └── docker-compose.cloudflare.yml     # Cloudflare Tunnel setup
 ├── k8s/                      # Kubernetes manifests
+│   ├── README.md            # K8s deployment instructions
+│   ├── deployment.yaml      # Main deployment with HPA
+│   ├── service.yaml         # Service definition
+│   └── ...                  # Other k8s resources
 ├── scripts/                  # Deployment and utility scripts
 ├── config/                   # Configuration templates
 ├── docs/                     # Comprehensive documentation

@@ -225,7 +225,7 @@ For local Kubernetes testing:
 k3d cluster create rccremote-test --port "8443:443@loadbalancer"
 
 # 2. Deploy
-kubectl apply -f examples/k8s-complete-example/
+kubectl apply -f k8s/
 
 # 3. Test
 export KUBECONFIG=$(k3d kubeconfig write rccremote-test)
