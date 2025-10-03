@@ -54,8 +54,8 @@ spec:
           mountPath: /etc/certs
       containers:
       - name: rccremote
-        image: rccremote:latest
-        imagePullPolicy: IfNotPresent
+        image: ghcr.io/yorko-io/rccremote-docker:latest
+        imagePullPolicy: Always
         command: ["/scripts/entrypoint-rcc.sh"]
         args: ["rccremote"]
         ports:
