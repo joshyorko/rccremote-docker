@@ -85,9 +85,43 @@
                 <h2 class="section-title">&gt; HOLOTREE CATALOGS</h2>
                 <button class="btn btn-secondary" onclick="refreshCatalogs()">⟳ REFRESH</button>
             </div>
+            
+            <!-- Progress Bar Container -->
+            <div id="catalogRefreshProgress" class="progress-container" style="display: none;">
+                <div class="progress-header">
+                    <span class="progress-label">Building Holotree Catalogues...</span>
+                    <span class="progress-percentage" id="catalogProgressPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="catalogProgressFill"></div>
+                </div>
+                <div class="progress-terminal" id="catalogProgressTerminal">
+                    <div class="terminal-line">Initializing build process...</div>
+                </div>
+            </div>
+            
             <div id="catalogsList" class="list-container">
                 <div class="terminal-output" id="catalogsOutput">
                     Loading catalogs...
+                </div>
+            </div>
+            
+            <!-- Catalog Summary Table -->
+            <div id="catalogSummary" class="catalog-summary" style="display: none;">
+                <h3 class="summary-title">&gt; ENVIRONMENT OVERVIEW</h3>
+                <div class="catalog-table-wrapper">
+                    <table class="catalog-table">
+                        <thead>
+                            <tr>
+                                <th>CATALOG ID</th>
+                                <th>ROBOT</th>
+                                <th>STATUS</th>
+                                <th>COMPONENTS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalogTableBody">
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>

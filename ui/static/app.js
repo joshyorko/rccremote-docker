@@ -218,7 +218,7 @@ async function createRobot() {
 }
 
 async function deleteRobot(name) {
-    if (!confirm(`Are you sure you want to delete robot "${name}"?\n\nThis action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to delete robot "${name}"?\n\nThis action cannot be undone and will trigger a catalog refresh.`)) {
         return;
     }
     
@@ -232,14 +232,29 @@ async function deleteRobot(name) {
             showToast(`Robot "${name}" deleted successfully`, 'success');
             loadRobots();
             loadDashboard(); // Refresh stats
+            
+            // Automatically refresh catalogs after robot deletion
+            hideLoading();
+            showToast('Refreshing catalogs to remove deleted robot environment...', 'info');
+            
+            // Switch to catalogs tab if not already there
+            const catalogTab = document.querySelector('[data-tab="catalogs"]');
+            if (catalogTab && !catalogTab.classList.contains('active')) {
+                switchTab('catalogs');
+            }
+            
+            // Trigger catalog refresh after a short delay
+            setTimeout(() => {
+                refreshCatalogs();
+            }, 500);
         } else {
             const error = await response.json();
             showToast(error.error || 'Failed to delete robot', 'error');
+            hideLoading();
         }
     } catch (error) {
         console.error('Failed to delete robot:', error);
         showToast('Failed to delete robot', 'error');
-    } finally {
         hideLoading();
     }
 }
@@ -431,17 +446,239 @@ async function loadCatalogs() {
 
 function renderCatalogs(data) {
     const output = document.getElementById('catalogsOutput');
+    const catalogSummary = document.getElementById('catalogSummary');
+    const tableBody = document.getElementById('catalogTableBody');
     
     if (data.catalogs.length === 0) {
         output.textContent = 'No catalogs found.\n\nAdd robots or import ZIP files to create catalogs.';
+        catalogSummary.style.display = 'none';
     } else {
         output.textContent = `Found ${data.count} catalog(s):\n\n` + data.raw_output;
+        
+        // Show the catalog table
+        tableBody.innerHTML = '';
+        
+        data.catalogs.forEach((catalog, index) => {
+            // Extract catalog ID (hash) from the catalog string
+            const parts = catalog.split(/\s+/);
+            const catalogId = parts.find(p => p.match(/^[a-f0-9]{16,}$/)) || catalog.substring(0, 16);
+            const robotName = parts[0] || `robot-${index + 1}`;
+            
+            // Determine components (simplified - showing Python/Conda/RCC)
+            const components = [
+                'Python Environment',
+                'Conda Dependencies', 
+                'RCC Runtime'
+            ];
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="catalog-id">${catalogId}...</div>
+                </td>
+                <td>
+                    <div class="catalog-robot">${robotName}</div>
+                </td>
+                <td>
+                    <span class="catalog-status active">● ACTIVE</span>
+                </td>
+                <td>
+                    <div class="catalog-components">
+                        ${components.map(c => `<span class="component-item">${c}</span>`).join('')}
+                    </div>
+                </td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+        
+        catalogSummary.style.display = 'block';
     }
 }
 
-function refreshCatalogs() {
-    loadCatalogs();
-    showToast('Refreshing catalogs...', 'info');
+async function refreshCatalogs() {
+    const progressContainer = document.getElementById('catalogRefreshProgress');
+    const progressFill = document.getElementById('catalogProgressFill');
+    const progressPercent = document.getElementById('catalogProgressPercent');
+    const progressTerminal = document.getElementById('catalogProgressTerminal');
+    const catalogSummary = document.getElementById('catalogSummary');
+    
+    // Hide summary and show progress
+    catalogSummary.style.display = 'none';
+    progressContainer.style.display = 'block';
+    
+    // Store previous catalogs for comparison
+    let previousCatalogs = [...state.catalogs];
+    
+    // Simulate progress stages
+    const stages = [
+        { percent: 10, message: '⚙ Initializing holotree rebuild process...' },
+        { percent: 20, message: '📂 Scanning robot directories...' },
+        { percent: 30, message: '🔍 Validating robot.yaml and conda.yaml files...' },
+        { percent: 45, message: '🔨 Building environments from robot definitions...' },
+        { percent: 60, message: '📦 Exporting catalogs to ZIP archives...' },
+        { percent: 75, message: '📥 Importing catalogs into shared holotree...' },
+        { percent: 85, message: '🔄 Synchronizing holotree state...' },
+        { percent: 95, message: '✓ Finalizing catalog rebuild...' }
+    ];
+    
+    let currentStage = 0;
+    
+    // Function to update progress
+    const updateProgress = (percent, message) => {
+        progressFill.style.width = percent + '%';
+        progressPercent.textContent = percent + '%';
+        
+        if (message) {
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            line.textContent = message;
+            progressTerminal.appendChild(line);
+            progressTerminal.scrollTop = progressTerminal.scrollHeight;
+        }
+    };
+    
+    // Start progress animation
+    const progressInterval = setInterval(() => {
+        if (currentStage < stages.length) {
+            const stage = stages[currentStage];
+            updateProgress(stage.percent, stage.message);
+            currentStage++;
+        }
+    }, 800);
+    
+    try {
+        // Call the rebuild endpoint
+        const response = await fetch(`${API_BASE}/api/catalogs/rebuild`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        // Stop progress animation
+        clearInterval(progressInterval);
+        
+        if (result.success) {
+            // Complete progress
+            updateProgress(100, '✓ Catalog rebuild completed successfully!');
+            
+            // Parse output to show details
+            if (result.output) {
+                const outputLines = result.output.split('\n').filter(l => l.trim());
+                outputLines.slice(-5).forEach(line => {
+                    if (line.trim()) {
+                        const termLine = document.createElement('div');
+                        termLine.className = 'terminal-line success';
+                        termLine.textContent = line;
+                        progressTerminal.appendChild(termLine);
+                    }
+                });
+                progressTerminal.scrollTop = progressTerminal.scrollHeight;
+            }
+            
+            // Reload catalogs to get updated list
+            await loadCatalogs();
+            
+            // Show catalog summary table with new environments highlighted
+            displayCatalogSummary(previousCatalogs);
+            
+            // Refresh the status to update catalog count
+            await loadDashboard();
+            
+            // Hide progress after a delay
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 3000);
+            
+            showToast('✓ Catalogs rebuilt successfully!', 'success');
+        } else {
+            updateProgress(100, '✗ Catalog rebuild failed: ' + result.message);
+            const errLine = document.createElement('div');
+            errLine.className = 'terminal-line error';
+            errLine.textContent = result.error || 'Unknown error';
+            progressTerminal.appendChild(errLine);
+            
+            showToast('Failed to rebuild catalogs: ' + result.message, 'error');
+            console.error('Rebuild output:', result.output);
+        }
+    } catch (error) {
+        clearInterval(progressInterval);
+        updateProgress(100, '✗ Failed to rebuild catalogs: ' + error.message);
+        
+        const errLine = document.createElement('div');
+        errLine.className = 'terminal-line error';
+        errLine.textContent = 'Error: ' + error.message;
+        progressTerminal.appendChild(errLine);
+        
+        console.error('Failed to rebuild catalogs:', error);
+        showToast('Failed to rebuild catalogs: ' + error.message, 'error');
+    }
+}
+
+function displayCatalogSummary(previousCatalogs) {
+    const catalogSummary = document.getElementById('catalogSummary');
+    const tableBody = document.getElementById('catalogTableBody');
+    
+    // Clear existing table
+    tableBody.innerHTML = '';
+    
+    if (state.catalogs.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    No catalogs found. Add robots to create environments.
+                </td>
+            </tr>
+        `;
+    } else {
+        // Map previous catalog names for comparison
+        const previousCatalogSet = new Set(previousCatalogs);
+        
+        state.catalogs.forEach((catalog, index) => {
+            const isNew = !previousCatalogSet.has(catalog);
+            
+            // Extract catalog ID (hash) from the catalog string
+            // Format is typically: "robot-name" or contains hash-like string
+            const parts = catalog.split(/\s+/);
+            const catalogId = parts.find(p => p.match(/^[a-f0-9]{16,}$/)) || catalog.substring(0, 16);
+            const robotName = parts[0] || `robot-${index + 1}`;
+            
+            // Determine components (simplified - showing Python/Conda/RCC)
+            const components = [
+                'Python Environment',
+                'Conda Dependencies', 
+                'RCC Runtime'
+            ];
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="catalog-id">${catalogId}...</div>
+                </td>
+                <td>
+                    <div class="catalog-robot">${robotName}</div>
+                </td>
+                <td>
+                    <span class="catalog-status ${isNew ? 'new' : 'active'}">
+                        ${isNew ? '✦ NEW' : '● ACTIVE'}
+                    </span>
+                </td>
+                <td>
+                    <div class="catalog-components">
+                        ${components.map(c => `<span class="component-item">${c}</span>`).join('')}
+                    </div>
+                </td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+    }
+    
+    // Show the summary
+    catalogSummary.style.display = 'block';
 }
 
 // ============================================================================

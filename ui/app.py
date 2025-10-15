@@ -64,7 +64,8 @@ def get_rcc_info_from_container():
         # Get RCC version
         version_cmd = ['docker', 'exec', 'rccremote-dev', 'rcc', '--version']
         version_result = subprocess.run(version_cmd, capture_output=True, text=True, timeout=5)
-        rcc_version = version_result.stdout.strip() if version_result.returncode == 0 else 'unknown'
+        # RCC version might be in stdout or stderr
+        rcc_version = (version_result.stdout or version_result.stderr).strip() if version_result.returncode == 0 else 'unknown'
         rcc_available = version_result.returncode == 0
         
         # Get catalogs
@@ -72,12 +73,16 @@ def get_rcc_info_from_container():
         catalogs_result = subprocess.run(catalogs_cmd, capture_output=True, text=True, timeout=10)
         
         if catalogs_result.returncode == 0:
-            catalog_lines = catalogs_result.stdout.split('\n')
+            # RCC outputs to stderr, not stdout
+            output = catalogs_result.stderr if catalogs_result.stderr else catalogs_result.stdout
+            catalog_lines = output.split('\n')
             # Filter out header lines and empty lines
             catalogs = [l.strip() for l in catalog_lines 
                        if l.strip() and not l.startswith('=') 
                        and not l.startswith('Holotree') 
-                       and not l.startswith('---')]
+                       and not l.startswith('---')
+                       and not l.startswith('Blueprint')
+                       and not l.startswith('OK.')]
             catalog_count = len(catalogs)
         else:
             catalog_count = 0
@@ -202,22 +207,110 @@ def get_catalogs():
                 'details': result.stderr
             }), 500
         
+        # RCC outputs to stderr, not stdout
+        output = result.stderr if result.stderr else result.stdout
+        
         # Parse catalog output
         catalogs = []
-        for line in result.stdout.split('\n'):
+        for line in output.split('\n'):
             line = line.strip()
-            if line and not line.startswith('=') and not line.startswith('Holotree') and not line.startswith('---'):
+            if line and not line.startswith('=') and not line.startswith('Holotree') and not line.startswith('---') and not line.startswith('Blueprint') and not line.startswith('OK.'):
                 catalogs.append(line)
         
         return jsonify({
             'catalogs': catalogs,
             'count': len(catalogs),
-            'raw_output': result.stdout
+            'raw_output': output
         })
     except Exception as e:
         return jsonify({
             'error': 'Failed to retrieve catalogs',
             'details': str(e)
+        }), 500
+
+@app.route('/api/catalogs/rebuild', methods=['POST'])
+def rebuild_catalogs():
+    """Trigger catalog rebuild in the rccremote container"""
+    try:
+        # Execute the build process in the rccremote container
+        # This runs the same build_hololibs function from the entrypoint script
+        rebuild_cmd = ['docker', 'exec', 'rccremote-dev', '/bin/sh', '-c', '''
+            HOLOLIB_ZIP_PATH_INT=/hololib_zip_internal
+            ROBOTS_PATH=/robots
+            
+            echo "=== Rebuilding catalogs from robot definitions ==="
+            mkdir -p $HOLOLIB_ZIP_PATH_INT
+            
+            find $ROBOTS_PATH -type f -name "robot.yaml" | while read -r robot_yaml; do
+                robot=$(dirname "$robot_yaml")
+                robot_name=$(basename "$robot")
+                echo "Processing robot: $robot_name"
+                
+                if [ -f "$robot/conda.yaml" ]; then
+                    # Source .env if it exists
+                    if [ -f "$robot/.env" ]; then
+                        saved_env=$(mktemp)
+                        export -p >"$saved_env"
+                        set -a
+                        . "$robot/.env"
+                        set +a
+                    fi
+                    
+                    # Build the environment
+                    rcc ht vars -r "$robot_yaml"
+                    
+                    # Export to ZIP
+                    rcc ht export -r "$robot_yaml" -z "$HOLOLIB_ZIP_PATH_INT/$robot_name.zip"
+                    
+                    # Import into shared holotree
+                    rcc holotree import "$HOLOLIB_ZIP_PATH_INT/$robot_name.zip"
+                    
+                    # Restore environment if saved
+                    if [ -f "$saved_env" ]; then
+                        unset ROBOCORP_HOME
+                        . "$saved_env" && rm "$saved_env"
+                    fi
+                    
+                    echo "✓ Catalog built for $robot_name"
+                else
+                    echo "✗ Skipping $robot_name: conda.yaml not found"
+                fi
+            done
+            
+            echo "=== Catalog rebuild complete ==="
+            rcc ht catalogs
+        ''']
+        
+        result = subprocess.run(rebuild_cmd, capture_output=True, text=True, timeout=300)
+        
+        # Get output from stderr (where RCC writes)
+        output = result.stderr if result.stderr else result.stdout
+        
+        if result.returncode != 0:
+            return jsonify({
+                'success': False,
+                'message': 'Catalog rebuild failed',
+                'output': output,
+                'error': result.stderr
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'message': 'Catalogs rebuilt successfully',
+            'output': output
+        })
+        
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'success': False,
+            'message': 'Catalog rebuild timed out (exceeded 5 minutes)',
+            'error': 'Operation took too long'
+        }), 504
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to trigger catalog rebuild',
+            'error': str(e)
         }), 500
 
 # ============================================================================
