@@ -1,5 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "/workspaces/https---github-com-yorko-io-rccremote-docker/data/robots/rf5/."
-    ]
+        "/var/home/kdlocpanda/second_brain/Projects/yorko-io/rccremote-docker/."
+    ],
+    "makefile.configureOnOpen": false
 }

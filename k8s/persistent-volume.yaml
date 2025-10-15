@@ -1,67 +1,31 @@
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: rccremote-holotree-pv
-  labels:
-    type: local
-    app: rccremote
-spec:
-  storageClassName: manual
-  capacity:
-    storage: 50Gi
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  hostPath:
-    path: "/mnt/data/rccremote/holotree"
-    type: DirectoryOrCreate
 ---
+# PersistentVolumeClaim for holotree data
+# Uses local-path storage class (Rancher/k3s default)
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rccremote-holotree-pvc
   namespace: rccremote
 spec:
-  storageClassName: manual
+  storageClassName: local-path
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 50Gi
-  selector:
-    matchLabels:
-      app: rccremote
 ---
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: rccremote-hololib-pv
-  labels:
-    type: local
-    app: rccremote-hololib
-spec:
-  storageClassName: manual
-  capacity:
-    storage: 10Gi
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  hostPath:
-    path: "/mnt/data/rccremote/hololib"
-    type: DirectoryOrCreate
----
+# PersistentVolumeClaim for hololib ZIP files
+# Uses local-path storage class (Rancher/k3s default)
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rccremote-hololib-pvc
   namespace: rccremote
 spec:
-  storageClassName: manual
+  storageClassName: local-path
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 10Gi
-  selector:
-    matchLabels:
-      app: rccremote-hololib
+

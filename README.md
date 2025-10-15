@@ -6,6 +6,8 @@ Enterprise-ready Docker and Kubernetes deployment for [RCC Remote](https://sema4
 
 For comprehensive deployment guides and advanced configurations, see:
 
+- **[Makefile Usage Guide](MAKEFILE.md)** - Unified deployment interface with all commands
+- **[Quick Start Guide](docs/QUICKSTART.md)** - Step-by-step walkthrough for first-time users
 - **[Deployment Guide](docs/deployment-guide.md)** - Complete deployment instructions for Docker Compose and Kubernetes
 - **[Kubernetes Setup](docs/kubernetes-setup.md)** - Kubernetes-specific configuration and best practices
 - **[ARC Integration](docs/arc-integration.md)** - GitHub Actions Runner Controller integration
@@ -13,7 +15,27 @@ For comprehensive deployment guides and advanced configurations, see:
 
 ## 🚀 Quick Start
 
-Choose your deployment method:
+### Using Makefile (Recommended)
+
+The easiest way to manage deployments is using the provided Makefile:
+
+```bash
+# Quick development setup (auto-generates certs and starts services)
+make quick-dev
+
+# Quick production setup
+make quick-prod SERVER_NAME=your-domain.com
+
+# Quick Kubernetes deployment
+make quick-k8s
+
+# See all available commands
+make help
+```
+
+See [Makefile Usage Guide](MAKEFILE.md) for comprehensive documentation.
+
+### Using Scripts Directly
 
 ```bash
 # Docker Compose (Development)

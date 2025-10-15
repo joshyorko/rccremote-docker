@@ -1,13 +1,37 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Certificates
 certs/*.crt
 certs/*.key
 certs/*.pem
 certs/*.csr
 certs/*.srl
+
+# Robot Framework outputs
 log.html
 report.html
 output.xml
 stdout.log
 stderr.log
 *freeze.yaml
+
+# Data directories
 data/hololib_zip
 data/robots
+
+# Backups
+backups/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
