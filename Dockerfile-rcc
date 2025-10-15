@@ -6,16 +6,18 @@ RUN wget https://github.com/joshyorko/rcc/releases/download/v18.8.0/rcc-linux64 
     wget https://github.com/joshyorko/rcc/releases/download/v18.8.0/rccremote-linux64 -O rccremote && \
     chmod +x rcc rccremote
 
-# Stage 2: Minimal Alpine runtime
-FROM alpine:latest
+# Stage 2: Minimal Ubuntu runtime (glibc-based for RCC/micromamba compatibility)
+FROM ubuntu:22.04
 
-ENV LANG=C.UTF-8 LANGUAGE=C.UTF-8 LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8 LANGUAGE=C.UTF-8 LC_ALL=C.UTF-8 DEBIAN_FRONTEND=noninteractive
 
-# Install only essential runtime dependencies (Alpine equivalents)
-RUN apk add --no-cache \
+# Install only essential runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    gettext \
-    bash
+    gettext-base \
+    bash \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
     # Browser/playwright dependencies (if needed - Alpine has minimal versions)
     # libx11 \
     # libxcb \

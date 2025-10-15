@@ -1,6 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "/var/home/kdlocpanda/second_brain/Projects/yorko-io/rccremote-docker/."
-    ],
-    "makefile.configureOnOpen": false
-}
