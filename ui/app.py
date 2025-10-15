@@ -12,6 +12,8 @@ import os
 import json
 import subprocess
 import shutil
+import socket
+import requests
 from pathlib import Path
 from datetime import datetime
 from flask import Flask, jsonify, request, send_from_directory
@@ -33,6 +35,65 @@ ALLOWED_EXTENSIONS = {'yaml', 'yml', 'zip', 'txt', 'py', 'robot', 'env'}
 def allowed_file(filename):
     """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def check_tcp_port(host, port, timeout=2):
+    """Check if a TCP port is open and accepting connections"""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((host, int(port)))
+        sock.close()
+        return result == 0
+    except Exception as e:
+        return False
+
+def check_http_service(url, timeout=2):
+    """Check if an HTTP service is responding"""
+    try:
+        response = requests.get(url, timeout=timeout, verify=False)
+        return response.status_code < 500  # Accept any non-server-error status
+    except Exception as e:
+        return False
+
+def get_rcc_info_from_container():
+    """Get RCC version and catalog info from the rccremote container"""
+    try:
+        # Try to run rcc commands in the rccremote container
+        import subprocess
+        
+        # Get RCC version
+        version_cmd = ['docker', 'exec', 'rccremote-dev', 'rcc', '--version']
+        version_result = subprocess.run(version_cmd, capture_output=True, text=True, timeout=5)
+        rcc_version = version_result.stdout.strip() if version_result.returncode == 0 else 'unknown'
+        rcc_available = version_result.returncode == 0
+        
+        # Get catalogs
+        catalogs_cmd = ['docker', 'exec', 'rccremote-dev', 'rcc', 'holotree', 'catalogs']
+        catalogs_result = subprocess.run(catalogs_cmd, capture_output=True, text=True, timeout=10)
+        
+        if catalogs_result.returncode == 0:
+            catalog_lines = catalogs_result.stdout.split('\n')
+            # Filter out header lines and empty lines
+            catalogs = [l.strip() for l in catalog_lines 
+                       if l.strip() and not l.startswith('=') 
+                       and not l.startswith('Holotree') 
+                       and not l.startswith('---')]
+            catalog_count = len(catalogs)
+        else:
+            catalog_count = 0
+            
+        return {
+            'version': rcc_version,
+            'available': rcc_available,
+            'catalog_count': catalog_count
+        }
+    except Exception as e:
+        # Fallback to checking locally if docker exec fails
+        return {
+            'version': 'unknown',
+            'available': False,
+            'catalog_count': 0
+        }
 
 def run_command(cmd, cwd=None):
     """Execute shell command and return output"""
@@ -82,23 +143,18 @@ def health_check():
 @app.route('/api/status', methods=['GET'])
 def get_status():
     """Get comprehensive system status"""
-    # Check if rccremote process is running
-    rccremote_running = run_command('pgrep -x rccremote')['success']
+    # Check if rccremote is reachable via TCP
+    rccremote_running = check_tcp_port(RCCREMOTE_HOST, RCCREMOTE_PORT)
     
-    # Check nginx
-    nginx_running = run_command('pgrep -x nginx')['success']
+    # Check if nginx is reachable (it's on port 443 in the dev setup)
+    nginx_running = check_tcp_port(NGINX_HOST, 443)
     
-    # Get RCC version
-    rcc_version = run_command('rcc --version')
-    
-    # Get catalog count
-    catalogs_result = run_command('rcc holotree catalogs')
-    catalog_lines = catalogs_result['stdout'].split('\n') if catalogs_result['success'] else []
-    catalog_count = len([l for l in catalog_lines if l.strip() and not l.startswith('=')])
+    # Get RCC info from the rccremote container
+    rcc_info = get_rcc_info_from_container()
     
     # Get robot count
     robot_path = Path(ROBOTS_PATH)
-    robot_count = len([d for d in robot_path.iterdir() if d.is_dir() and (d / 'robot.yaml').exists()])
+    robot_count = len([d for d in robot_path.iterdir() if d.is_dir() and (d / 'robot.yaml').exists()]) if robot_path.exists() else 0
     
     # Get hololib ZIP count
     hololib_path = Path(HOLOLIB_ZIP_PATH)
@@ -118,12 +174,12 @@ def get_status():
             }
         },
         'rcc': {
-            'version': rcc_version['stdout'].strip() if rcc_version['success'] else 'unknown',
-            'available': rcc_version['success']
+            'version': rcc_info['version'],
+            'available': rcc_info['available']
         },
         'statistics': {
             'robots': robot_count,
-            'catalogs': catalog_count,
+            'catalogs': rcc_info['catalog_count'],
             'hololib_zips': zip_count
         },
         'paths': {
@@ -135,26 +191,34 @@ def get_status():
 @app.route('/api/catalogs', methods=['GET'])
 def get_catalogs():
     """Get list of RCC holotree catalogs"""
-    result = run_command('rcc holotree catalogs')
-    
-    if not result['success']:
+    try:
+        # Query catalogs from the rccremote container
+        catalogs_cmd = ['docker', 'exec', 'rccremote-dev', 'rcc', 'holotree', 'catalogs']
+        result = subprocess.run(catalogs_cmd, capture_output=True, text=True, timeout=10)
+        
+        if result.returncode != 0:
+            return jsonify({
+                'error': 'Failed to retrieve catalogs',
+                'details': result.stderr
+            }), 500
+        
+        # Parse catalog output
+        catalogs = []
+        for line in result.stdout.split('\n'):
+            line = line.strip()
+            if line and not line.startswith('=') and not line.startswith('Holotree') and not line.startswith('---'):
+                catalogs.append(line)
+        
+        return jsonify({
+            'catalogs': catalogs,
+            'count': len(catalogs),
+            'raw_output': result.stdout
+        })
+    except Exception as e:
         return jsonify({
             'error': 'Failed to retrieve catalogs',
-            'details': result['stderr']
+            'details': str(e)
         }), 500
-    
-    # Parse catalog output
-    catalogs = []
-    for line in result['stdout'].split('\n'):
-        line = line.strip()
-        if line and not line.startswith('=') and not line.startswith('Holotree'):
-            catalogs.append(line)
-    
-    return jsonify({
-        'catalogs': catalogs,
-        'count': len(catalogs),
-        'raw_output': result['stdout']
-    })
 
 # ============================================================================
 # Robot Management Endpoints

@@ -6,6 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     procps \
     netcat-openbsd \
+    docker.io \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
