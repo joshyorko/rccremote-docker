@@ -569,7 +569,7 @@ def get_hololib_zips():
 
 @app.route('/api/hololib-zips/upload', methods=['POST'])
 def upload_hololib_zip():
-    """Upload hololib ZIP file"""
+    """Upload hololib ZIP file and import it into the holotree"""
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
     
@@ -585,11 +585,37 @@ def upload_hololib_zip():
     file_path = Path(HOLOLIB_ZIP_PATH) / filename
     
     try:
+        # Save the file
         file.save(file_path)
+        
+        # Import the ZIP into the rccremote container's holotree
+        import_cmd = ['docker', 'exec', 'rccremote-dev', 'rcc', 'holotree', 'import', f'/hololib_zip/{filename}']
+        result = subprocess.run(import_cmd, capture_output=True, text=True, timeout=120)
+        
+        if result.returncode != 0:
+            return jsonify({
+                'success': False,
+                'message': 'ZIP file uploaded but import failed',
+                'filename': filename,
+                'error': result.stderr or result.stdout
+            }), 500
+        
+        # Get the import output
+        import_output = result.stderr if result.stderr else result.stdout
+        
         return jsonify({
-            'message': 'ZIP file uploaded successfully',
-            'filename': filename
+            'success': True,
+            'message': 'ZIP file uploaded and imported successfully',
+            'filename': filename,
+            'import_output': import_output
         }), 201
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            'success': False,
+            'message': 'ZIP file uploaded but import timed out',
+            'filename': filename,
+            'error': 'Import operation exceeded 2 minutes'
+        }), 504
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

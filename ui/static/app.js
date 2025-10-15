@@ -736,13 +736,19 @@ async function uploadZipFile(file) {
             body: formData
         });
         
+        const result = await response.json();
+        
         if (response.ok) {
-            showToast(`ZIP file "${file.name}" uploaded successfully`, 'success');
+            if (result.success) {
+                showToast(`✓ ZIP file "${file.name}" uploaded and imported successfully`, 'success');
+            } else {
+                showToast(`⚠ ZIP file "${file.name}" uploaded but import failed: ${result.error}`, 'warning');
+            }
             loadZips();
             loadDashboard(); // Refresh stats
+            loadCatalogs(); // Refresh catalog list
         } else {
-            const error = await response.json();
-            showToast(error.error || 'Failed to upload ZIP file', 'error');
+            showToast(result.error || 'Failed to upload ZIP file', 'error');
         }
     } catch (error) {
         console.error('Failed to upload ZIP file:', error);
