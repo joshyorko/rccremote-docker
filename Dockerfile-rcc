@@ -43,5 +43,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy binaries from downloader stage
 COPY --from=downloader /tmp/rcc /tmp/rccremote /usr/bin/
+# Copy helper scripts into the image so the image is runnable without host mounts.
+# This makes the image self-contained for production deployments.
+COPY scripts /scripts
+RUN chmod +x /scripts/*.sh || true
 
 ENTRYPOINT [ "/scripts/entrypoint-rcc.sh" ]

@@ -2,361 +2,222 @@
 
 Enterprise-ready Docker and Kubernetes deployment for [RCC Remote](https://sema4.ai/docs/automation/rcc/overview) with SSL/TLS, automated certificate management, horizontal scaling, and comprehensive monitoring.
 
+## � Quick Start
+
+**Choose your deployment:**
+
+### 🏠 Local Development
+```bash
+make quick-dev
+export RCC_REMOTE_ORIGIN=https://localhost:8443
+rcc holotree catalogs
+```
+
+### 🌍 Cloudflare Tunnel (Public Access, No Server Needed)
+```bash
+make quick-cf HOSTNAME=rccremote.yourdomain.com
+export RCC_REMOTE_ORIGIN=https://rccremote.yourdomain.com
+rcc holotree catalogs
+```
+
+### 🏢 Production Server
+```bash
+make certs-signed SERVER_NAME=your-domain.com
+make prod-up SERVER_NAME=your-domain.com
+export RCC_REMOTE_ORIGIN=https://your-domain.com
+rcc holotree catalogs
+```
+
+### ☸️ Kubernetes
+```bash
+make quick-k8s
+export RCC_REMOTE_ORIGIN=https://your-k8s-service.com
+rcc holotree catalogs
+```
+
 ## 📚 Documentation
 
-For comprehensive deployment guides and advanced configurations, see:
-
-- **[Makefile Usage Guide](MAKEFILE.md)** - Unified deployment interface with all commands
-- **[Quick Start Guide](docs/QUICKSTART.md)** - Step-by-step walkthrough for first-time users
-- **[Deployment Guide](docs/deployment-guide.md)** - Complete deployment instructions for Docker Compose and Kubernetes
-- **[Kubernetes Setup](docs/kubernetes-setup.md)** - Kubernetes-specific configuration and best practices
-- **[ARC Integration](docs/arc-integration.md)** - GitHub Actions Runner Controller integration
+- **[Complete Setup Guide](docs/SETUP_GUIDE.md)** - ⭐ **Start here!** Comprehensive guide for all deployment modes
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - Technical architecture and design decisions
 - **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+- **[Makefile Commands](docs/MAKEFILE.md)** - All available commands and usage
 
-## 🚀 Quick Start
+## 💡 Which Deployment Should I Choose?
 
-### Using Makefile (Recommended)
+| Scenario | Deployment | Command |
+|----------|------------|---------|
+| Testing locally | Development | `make quick-dev` |
+| Need public access, no server | Cloudflare Tunnel | `make quick-cf HOSTNAME=rccremote.yourdomain.com` |
+| Have server with public IP | Production | `make prod-up SERVER_NAME=your-domain.com` |
+| Enterprise with Kubernetes | Kubernetes | `make quick-k8s` |
 
-The easiest way to manage deployments is using the provided Makefile:
-
-```bash
-# Quick development setup (auto-generates certs and starts services)
-make quick-dev
-
-# Quick production setup
-make quick-prod SERVER_NAME=your-domain.com
-
-# Quick Kubernetes deployment
-make quick-k8s
-
-# See all available commands
-make help
-```
-
-See [Makefile Usage Guide](MAKEFILE.md) for comprehensive documentation.
-
-### Using Scripts Directly
-
-```bash
-# Docker Compose (Development)
-./scripts/deploy-docker.sh --environment development
-
-# Configure RCC client (REQUIRED - run on each client machine)
-./scripts/configure-rcc-profile.sh
-
-# Set environment variable (add to ~/.bashrc or ~/.zshrc for persistence)
-export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
-
-# Test connectivity
-rcc holotree catalogs
-
-# Docker Compose (Production)
-./scripts/deploy-docker.sh --environment production
-
-# Kubernetes
-./scripts/deploy-k8s.sh --namespace rccremote --replicas 3
-```
-
-See [Quick Start Guide](docs/QUICKSTART.md) and [Deployment Guide](docs/deployment-guide.md) for detailed instructions.
+**Not sure?** See the [Setup Guide](docs/SETUP_GUIDE.md) for a decision tree and detailed instructions.
 
 ---
 
-## Overview
+## 📖 What is RCC Remote?
 
-Docker-compose and Kubernetes setup with SSL for [rccremote](https://sema4.ai/docs/automation/rcc/overview).
+RCC Remote serves environment blueprints (catalogs) to isolated RCC clients that cannot access the internet directly. This is essential for:
 
-### Key Features
+- **Offline/Air-gapped Environments** - Test clients isolated from the internet
+- **Performance** - Centralized catalog management saves bandwidth and build time  
+- **Security** - Control what environments are available to clients
+- **Consistency** - Ensure all clients use the same environment versions
 
-- **🔒 SSL/TLS Encryption** - Automated certificate generation and management
-- **📈 Horizontal Scaling** - Support for 100+ concurrent RCC clients with Kubernetes HPA
-- **🔄 High Availability** - 99.9% uptime target with multiple replicas and health probes
+### Architecture
+
+```
+┌─────────────┐   HTTPS    ┌─────────┐   HTTP    ┌────────────┐
+│ RCC Client  │ ─────────> │  nginx  │ ────────> │ rccremote  │
+└─────────────┘   Port 443  └─────────┘  Port 4653└────────────┘
+                             (SSL Proxy)            (Catalog Server)
+```
+
+**Key Concepts:**
+- **Catalog (Hololib)**: Blueprint of an environment that can create multiple instances
+- **Space (Holotree)**: Actual environment instance created from a catalog
+- **RCC Client**: Tool that requests and builds environments from catalogs
+
+---
+
+## ✨ Features
+
+- **🔒 SSL/TLS Encryption** - Secure connections with automated certificate management
+- **📈 Horizontal Scaling** - Support for 100+ concurrent RCC clients (Kubernetes)
+- **🔄 High Availability** - 99.9% uptime target with health checks and auto-recovery
 - **🐳 Multi-Platform** - Docker Compose and Kubernetes deployment options
 - **🏥 Health Monitoring** - Comprehensive health checks and Prometheus metrics
-- **🎯 ARC Integration** - Native support for GitHub Actions Runner Controller
 - **⚡ Fast Deployment** - Sub-5-minute deployment from start to operational
 - **🛡️ Security Hardened** - Non-root containers, minimal privileges, network policies
+- **☁️ Cloud-Ready** - Built-in Cloudflare Tunnel support for zero-config public access
 
-```mermaid
-graph LR
-    classDef dotted stroke-dasharray: 5 5;
-    rcc -->|HTTPS| nginx
-    nginx -->|HTTP| rccremote
-    ZIP -. import .-> rccremote
-    YAML -. build .-> rccremote
-    rccremote -- fetch --> rccremote2[rccremote]:::dotted
-    rccremote -- fetch --> rccremote-docker:::dotted
-    subgraph import sources
-    ZIP
-    YAML
-    end
-    style ZIP fill:#baa773,stroke-width:0px,color:black
-    style YAML fill:#baa773,stroke-width:0px,color:black
-    style nginx fill:#6589a5,stroke-width:0px,color:black
-    style rccremote2 stroke-line:dotted
-```
+---
 
-## Background
+## 🎯 Essential Commands
 
-### Purpose of this project
-
-In order to built RCC environments with **rcc**, the host must be connected to the Internet in order to download the installation sources for Python/Node.js/etc.  
-However, for security reasons, test clients are often completely isolated from the Internet.
-
-**RCCRemote** solves this problem by serving the blueprints of these environments (aka "_Catalogs_") for **RCC** clients which can fetch the blueprints from there.  
-This centralized approach does not only save network traffic and computing resources, but also is a significant performance gain, because when the clients ask for environments, rccremote only relays the missing files, not the whole environment.
-
-By default, **rccremote** operates unencrypted, meaning **rcc** cannot verify the connection, nor is the data transmission encrypted.  
-
-This setup provides a way to run RCCRemote behind a reverse proxy (nginx) with TLS encryption and server authentication.
-
-## Directory Structure
-
-```
-├── docker-compose/           # Docker Compose configurations
-│   ├── docker-compose.development.yml    # Development setup (port 8443)
-│   ├── docker-compose.production.yml     # Production setup (port 443)
-│   └── docker-compose.cloudflare.yml     # Cloudflare Tunnel setup
-├── k8s/                      # Kubernetes manifests
-│   ├── README.md            # K8s deployment instructions
-│   ├── deployment.yaml      # Main deployment with HPA
-│   ├── service.yaml         # Service definition
-│   └── ...                  # Other k8s resources
-├── scripts/                  # Deployment and utility scripts
-├── config/                   # Configuration templates
-├── docs/                     # Comprehensive documentation
-├── data/                     # Runtime data
-│   ├── robots/              # Robot definitions for building catalogs
-│   └── hololib_zip/         # Pre-built catalog imports
-└── certs/                    # SSL/TLS certificates
-
-```
-
-### Terminology
-
-RCC-internal concepts:
-
-- **Hololib**: A **Collection** of currently available **catalogs**.
-  - **Catalog**: A blueprint of an environment which can be used to create an arbitrary number of instances of this environment.
-- **Holotree**: A **Collection** of currently available **spaces**.
-  - **Space**: An instance of an environment. There is a one-to-many relation between catalog and space.
-
-## Deployment
-
-### Docker Compose
-
-Choose the appropriate compose file from the `docker-compose/` directory:
-
-**Development (port 8443, auto-generated certificates):**
+### Development
 ```bash
-./scripts/deploy-docker.sh --environment development
+make quick-dev              # Start development environment
+make dev-logs              # View logs
+make dev-down              # Stop services
+make client-configure      # Configure RCC client
 ```
 
-**Production (port 443, requires custom certificates):**
+### Production
 ```bash
-./scripts/deploy-docker.sh --environment production --server-name your-domain.com
+make certs-signed SERVER_NAME=your-domain.com  # Generate certificates
+make prod-up SERVER_NAME=your-domain.com       # Start production
+make prod-logs                                 # View logs
+make prod-down                                 # Stop services
+```
+
+### Cloudflare
+```bash
+make quick-cf HOSTNAME=rccremote.yourdomain.com  # Setup tunnel
+make cf-logs                                     # View logs
+make cf-down                                     # Stop tunnel
+make cf-tunnel-list                              # List tunnels
 ```
 
 ### Kubernetes
-
-Deploy to a Kubernetes cluster with high availability:
 ```bash
-./scripts/deploy-k8s.sh --namespace rccremote --replicas 3
+make quick-k8s             # Deploy to Kubernetes
+make k8s-status            # View status
+make k8s-logs              # View logs
+make k8s-restart           # Restart deployment
 ```
 
-### RCC Client Configuration (REQUIRED)
+### Maintenance
+```bash
+make test-health           # Health check
+make ps                    # Show running containers/pods
+make backup                # Backup robot data
+make help                  # Show all commands
+```
 
-After deploying the server, configure RCC clients to use it:
+---
+
+## 🔧 Prerequisites
+
+- **Docker** 20.10+ and Docker Compose
+- **Linux host** (Ubuntu 20.04+, Fedora, or Universal Blue)
+- **8GB RAM** minimum
+- **50GB+ storage** for holotree data
+- **RCC client** (optional, for testing) - [Download here](https://sema4.ai/docs/automation/rcc/overview)
+
+**Check your system:**
+```bash
+make env-check
+```
+
+---
+
+## 📦 Adding Robots
+
+### Method 1: Robot Directories (Built on Startup)
+
+Place robot definitions in `data/robots/`:
 
 ```bash
-# Run on each client machine
-./scripts/configure-rcc-profile.sh
+data/robots/
+├── my-robot/
+│   ├── robot.yaml
+│   └── conda.yaml
+```
 
-# Add to ~/.bashrc or ~/.zshrc for persistence
-export RCC_REMOTE_ORIGIN=https://rccremote.local:8443
+Restart to build catalogs:
+```bash
+make dev-restart  # or prod-restart
+```
 
-# Test connectivity
+### Method 2: Pre-built ZIP Catalogs (Import on Startup)
+
+Export from a build machine:
+```bash
+cd /path/to/robot
+rcc holotree export -r robot.yaml -z my-robot.zip
+```
+
+Copy to server:
+```bash
+cp my-robot.zip data/hololib_zip/
+make dev-restart
+```
+
+---
+
+## 🧪 Testing Your Deployment
+
+```bash
+# Quick health check
+make test-health
+
+# Test RCC connectivity
 rcc holotree catalogs
+
+# Run all tests
+make test-all
+
+# Manual verification
+curl -k https://localhost:8443/
 ```
 
-See [Quick Start Guide](docs/QUICKSTART.md) and [Deployment Guide](docs/deployment-guide.md) for detailed step-by-step instructions.
+---
 
-## Certificate Management
+## 🤝 Contributing
 
-### Auto-Generated (Development)
+Issues and pull requests are welcome! See our [GitHub repository](https://github.com/yorko-io/rccremote-docker).
 
-The development setup automatically generates self-signed certificates if none are provided.
+## 📄 License
 
-### Custom Certificates (Production - Recommended)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Generate CA-signed certificates for proper SSL verification:
+## 🙏 Acknowledgments
 
-```bash
-./scripts/cert-management.sh generate-ca-signed --server-name your-domain.com
-```
+- [Robocorp/Sema4.ai](https://sema4.ai) for RCC and RCC Remote
+- nginx for the excellent reverse proxy
+- Cloudflare for the amazing tunnel service
 
-This creates:
-- `certs/rootCA.crt` - Root CA certificate (install on client machines)
-- `certs/server.crt` - Server certificate
-- `certs/server.key` - Server private key
+---
 
-**Install Root CA on client machines:**
-
-Linux:
-```bash
-sudo cp certs/rootCA.crt /usr/local/share/ca-certificates/rccremote-ca.crt
-sudo update-ca-certificates
-```
-
-See [Deployment Guide - Certificate Management](docs/deployment-guide.md#certificate-management) for other platforms.
-
-## Adding Robot Catalogs
-
-There are two ways to add environment catalogs to RCC Remote: 
-
-- A) `./data/robots` - Containing Robot directories with `robot.yaml`/`conda.yaml`: **build and import** on startup
-- B) `./data/hololib_zip` - Containing ZIP files of exported Catalogs: **import** on startup
-- C) using another **rccremote** server (cascaded setup, not yet implemented)
-
-Both modes can be used simultanously. In the following, they are explained. 
-
-### Mode A: Add Robot directories
-
-The **rccremote** container first uses **rcc** to build the Catalogs for each directory where it locates `robot.yaml`/`conda.yaml` files.  
-
-As this happens inside of the Docker container, the created Catalogs are **for Linux systems only**.  
-
-By default, all builds compile for the Holotree path `/opt/robocorp`. If the **rcc** clients operate on systems where this path is useable, this is fine. The environment would be created below of this path then. 
-
-To change the holotree path, the Robot folders can contain a `.env` file: 
-
-```
-ROBOCORP_HOME=/robotmk/rcc_home/current_user
-```
-
-(For examples, see `./data/robots-docker-compose/`).
-
-Before each build, **rcc** sources this file so that the Catalog is built against a custom `ROBOCORP_HOME`.
-After each environment creation, the environment gets exported into a ZIP file (volume: hololib_zip_internal).
-
-Finally, all ZIP files are imported into the shared holotree, before the **rccremote** server process gets started. 
-
-### Mode B: Add Hololib ZIP files
-
-This mode is divided into 2 sub steps: 
-
-- **Create the environments** on a build machine (Linux/Windows) which has internet access
-- **Add the ZIP files** into `./data/hololib_zip`
-
-#### Step 1: Create the environments
-
-On the machine where you can build environments with internet access, set `ROBOCORP_HOME` to a path where the Catalogs should be built against. 
-
-**Example**: 
-
-You want to create a Hololib ZIP which can be used on a Windows test client (Windows). The system executing the Robot expects all Catalogs and Spaces for user `alice` in `C:\robotmk\rcc_home\alice`.
-
-```
-set ROBOCORP_HOME=C:\robotmk\rcc_home\alice
-cd myrobot
-# create the catalog (+space), using the custom ROBOCORP_HOME
-rcc holotree vars
-# export the ZIP file
-rcc holotree export -r robot.yaml -z rf_playwright_17_18.zip
-```
-
-#### Step 2: Add the ZIP files
-
-Copy all exported catalog files into the folder `./data/hololib_zip`.  
-When the **rccremote** container gets started, it imports all ZIP files into the shared holotree. 
-
-## rcc: usage with rccremote
-
-In `docker-compose.yaml` you can find the container **rcc**, commented by default.  
-You do not need this container in production, but it's useful for testing **rcc** in combination with **rccremote**.
-
-To use that container, follow these steps:
-
-### Start the rcc client container
-
-Uncomment the **rcc** container definition and start it: 
-
-`docker compose up -d rcc`
-
-Open a shell inside the **rcc** container: 
-
-`docker exec -it rcc bash`
-
-
-### RCC client profile configuration
-
-On startup, the **rcc** container auto-configures the profile SSL-setting depending on whether the folder `certs` contains a root certificate (`rootCA.pem`) or not: 
-
-If `rootCA.pem` is 
-  
-- **not present** => Profile **no-sslverify** with setting `verify-ssl: false`
-- **present** => Profile **cabundle** with `verify-ssl: true` and the PEM content included into the profile YAML configuration
-
-You can verify the active **rcc** profile with `rcc config switch`:
-
-```
-root@0ca74438d77f:/# rcc config switch
-Available profiles:
-- ssl-noverify: disabled SSL verification
-
-Currently active profile is: ssl-noverify    # <----
-OK.
-```
-
-### Testing rcc fetching the hololib from rccremote
-
-Change into a robot folder below of `/robots` (this is the same host mounted `/robots` folder as on **rccremote**) where `robot.yaml` and `conda.yaml` files are. 
-
-Verify that `RCC_REMOTE_ORIGIN` is set to the nginx server, port 443: 
-
-```
-root@0ca74438d77f:/robots/rf7# echo $RCC_REMOTE_ORIGIN
-https://rccremote.local:443
-```
-
-Execute `rcc holotree vars`. **rcc** should be able to download the hololib from the server: 
-
-![alt text](./img/rcclog.png)
-
-## Debugging 
-
-### Connection test from rcc to nginx
-
-Test without the root certificate: 
-
-    openssl s_client -connect rccremote.local:443
-    ...
-    ...
-    Verify return code: 21 (unable to verify the first certificate)
-    Extended master secret: no
-    Max Early Data: 0
-    ---
-    read R BLOCK
-
-Test with Root certificate: 
-
-    openssl s_client -connect rccremote.local:443 -CAfile /etc/certs/rootCA.crt
-    Verify return code: 0 (ok)     #  <------------------------------
-    Extended master secret: no
-    Max Early Data: 0
-    ---
-    read R BLOCK
-
-### rcc settings
-
-    rcc config diag
-
-### rest
-
-Show crt details: 
-
-    openssl x509 -in /etc/nginx/server.crt -text -noout
-
-Switch to default profile: 
-
-    rcc config switch --noprofile
-
+**Need help?** Check the [Complete Setup Guide](docs/SETUP_GUIDE.md) or [Troubleshooting Guide](docs/troubleshooting.md).

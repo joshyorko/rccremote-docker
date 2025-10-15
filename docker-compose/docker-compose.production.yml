@@ -11,12 +11,12 @@ services:
       - ROBOCORP_HOME=/opt/robocorp
       - RCC_REMOTE_ORIGIN=https://${SERVER_NAME}:443
     volumes:
-      - ${ROBOTS_PATH:-./data/robots}:/robots:ro
-      - ${HOLOLIB_ZIP_PATH:-./data/hololib_zip}:/hololib_zip:ro
+      - ${ROBOTS_PATH:-../data/robots}:/robots:ro
+      - ${HOLOLIB_ZIP_PATH:-../data/hololib_zip}:/hololib_zip:ro
       - hololib_zip_internal:/hololib_zip_internal
       - robocorp_data:/opt/robocorp
-      - ${SCRIPTS_PATH:-./scripts}:/scripts:ro
-      - ${CERTS_PATH:-./certs}:/etc/certs:ro
+      - ${SCRIPTS_PATH:-../scripts}:/scripts:ro
+      - ${CERTS_PATH:-../certs}:/etc/certs:ro
     networks:
       - rccremote-network
     healthcheck:
@@ -42,8 +42,8 @@ services:
     environment:
       - SERVER_NAME=${SERVER_NAME}
     volumes:
-      - ${CONFIG_PATH:-./config}/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
-      - ${CERTS_PATH:-./certs}:/etc/nginx/certs:ro
+      - ${CONFIG_PATH:-../config}/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ${CERTS_PATH:-../certs}:/etc/nginx/certs:ro
     depends_on:
       rccremote:
         condition: service_healthy
@@ -64,6 +64,42 @@ services:
     cap_add:
       - NET_BIND_SERVICE
     read_only: false
+
+  ui:
+    image: rccremote-ui:latest
+    container_name: rccremote-ui-prod
+    hostname: ui
+    ports:
+      - "5000:5000"
+    environment:
+      - ROBOTS_PATH=/robots
+      - HOLOLIB_ZIP_PATH=/hololib_zip
+      - RCCREMOTE_HOST=rccremote
+      - RCCREMOTE_PORT=4653
+      - NGINX_HOST=nginx
+      - DEBUG=false
+    volumes:
+      - ${ROBOTS_PATH:-../data/robots}:/robots
+      - ${HOLOLIB_ZIP_PATH:-../data/hololib_zip}:/hololib_zip
+    depends_on:
+      rccremote:
+        condition: service_healthy
+    networks:
+      - rccremote-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: false
+    tmpfs:
+      - /tmp:noexec,nosuid,size=50m
 
 volumes:
   robocorp_data:

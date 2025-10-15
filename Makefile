@@ -87,6 +87,8 @@ build-dev: ## Build for development
 
 build-prod: ## Build for production
 	@echo "$(BLUE)Building production images...$(NC)"
+	@# Build the local rccremote image first (production compose expects pre-built images)
+	@$(MAKE) build
 	docker compose -f $(COMPOSE_PROD) build
 	@echo "$(GREEN)✓ Production build complete$(NC)"
 
@@ -144,10 +146,13 @@ dev-shell-nginx: ## Shell into development nginx container
 ##@ Production Deployment
 
 prod-up: ## Start production environment (requires SERVER_NAME)
-	@if [ -z "$(SERVER_NAME)" ] || [ "$(SERVER_NAME)" = "rccremote.local" ]; then \
+	@if [ -z "$(SERVER_NAME)" ]; then \
 		echo "$(RED)ERROR: Please set SERVER_NAME for production deployment$(NC)"; \
 		echo "Usage: make prod-up SERVER_NAME=your-domain.com"; \
 		exit 1; \
+	fi
+	@if [ "$(SERVER_NAME)" = "rccremote.local" ]; then \
+		echo "$(YELLOW)WARNING: SERVER_NAME is set to rccremote.local. This value is typically a development placeholder and is not recommended for production. Proceeding anyway...$(NC)"; \
 	fi
 	@echo "$(BLUE)Starting production environment for $(SERVER_NAME)...$(NC)"
 	SERVER_NAME=$(SERVER_NAME) docker compose -f $(COMPOSE_PROD) up -d

@@ -1,5 +1,9 @@
 # Makefile Usage Guide
 
+> **📖 New to RCC Remote Docker?** Start with the [Complete Setup Guide](SETUP_GUIDE.md) for step-by-step deployment instructions.
+> 
+> This document is a reference for all Makefile commands. For complete deployment workflows, see [SETUP_GUIDE.md](SETUP_GUIDE.md).
+
 This Makefile provides a unified interface for deploying and managing RCC Remote Docker across different environments and platforms.
 
 ## Quick Reference

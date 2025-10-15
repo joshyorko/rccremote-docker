@@ -75,6 +75,37 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  ui:
+    build:
+      context: ../ui
+      dockerfile: Dockerfile
+    container_name: rccremote-ui-dev
+    hostname: ui
+    ports:
+      - "5000:5000"
+    environment:
+      - ROBOTS_PATH=/robots
+      - HOLOLIB_ZIP_PATH=/hololib_zip
+      - RCCREMOTE_HOST=rccremote
+      - RCCREMOTE_PORT=4653
+      - NGINX_HOST=nginx
+      - DEBUG=true
+    volumes:
+      - ../data/robots:/robots
+      - ../data/hololib_zip:/hololib_zip
+    depends_on:
+      rccremote:
+        condition: service_healthy
+    networks:
+      - rccremote-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
   # Optional RCC test client container (uncomment to use)
   # rcc:
   #   build:
