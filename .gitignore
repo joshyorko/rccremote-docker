@@ -20,7 +20,7 @@ stderr.log
 
 # Data directories
 data/hololib_zip
-data/robots
+
 
 # Backups
 backups/
