@@ -35,3 +35,5 @@ backups/
 # OS
 .DS_Store
 Thumbs.db
+
+docker-compose/.env
