@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCC Remote Dashboard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <!-- Terminal Header -->
+    <header class="terminal-header">
+        <div class="terminal-title">
+            <span class="blink">█</span> RCC REMOTE DASHBOARD
+        </div>
+        <div class="terminal-controls">
+            <span class="status-indicator" id="connectionStatus">●</span>
+            <span id="statusText">CONNECTING...</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Dashboard Overview -->
+        <section id="dashboard" class="section">
+            <h2 class="section-title">&gt; SYSTEM STATUS</h2>
+            <div class="grid">
+                <div class="stat-card">
+                    <div class="stat-label">RCC REMOTE</div>
+                    <div class="stat-value" id="rccremoteStatus">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">NGINX</div>
+                    <div class="stat-value" id="nginxStatus">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">ROBOTS</div>
+                    <div class="stat-value" id="robotCount">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">CATALOGS</div>
+                    <div class="stat-value" id="catalogCount">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">HOLOLIB ZIPS</div>
+                    <div class="stat-value" id="zipCount">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">RCC VERSION</div>
+                    <div class="stat-value" id="rccVersion">—</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs">
+            <button class="tab active" data-tab="robots">ROBOTS</button>
+            <button class="tab" data-tab="catalogs">CATALOGS</button>
+            <button class="tab" data-tab="zips">HOLOLIB ZIPS</button>
+        </nav>
+
+        <!-- Robots Section -->
+        <section id="robots" class="section tab-content active">
+            <div class="section-header">
+                <h2 class="section-title">&gt; ROBOT MANAGEMENT</h2>
+                <button class="btn btn-primary" onclick="showCreateRobotModal()">+ NEW ROBOT</button>
+            </div>
+            
+            <div class="upload-zone" id="robotUploadZone">
+                <div class="upload-content">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">
+                        <strong>Drop robot files here</strong> or click to browse
+                        <div class="upload-hint">Supports: .yaml, .yml, .py, .robot, .txt, .env</div>
+                    </div>
+                    <input type="file" id="robotFileInput" multiple accept=".yaml,.yml,.py,.robot,.txt,.env" style="display: none;">
+                </div>
+            </div>
+
+            <div id="robotsList" class="list-container"></div>
+        </section>
+
+        <!-- Catalogs Section -->
+        <section id="catalogs" class="section tab-content">
+            <div class="section-header">
+                <h2 class="section-title">&gt; HOLOTREE CATALOGS</h2>
+                <button class="btn btn-secondary" onclick="refreshCatalogs()">⟳ REFRESH</button>
+            </div>
+            
+            <!-- Progress Bar Container -->
+            <div id="catalogRefreshProgress" class="progress-container" style="display: none;">
+                <div class="progress-header">
+                    <span class="progress-label">Building Holotree Catalogues...</span>
+                    <span class="progress-percentage" id="catalogProgressPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="catalogProgressFill"></div>
+                </div>
+                <div class="progress-terminal" id="catalogProgressTerminal">
+                    <div class="terminal-line">Initializing build process...</div>
+                </div>
+            </div>
+            
+            <div id="catalogsList" class="list-container">
+                <div class="terminal-output" id="catalogsOutput">
+                    Loading catalogs...
+                </div>
+            </div>
+            
+            <!-- Catalog Summary Table -->
+            <div id="catalogSummary" class="catalog-summary" style="display: none;">
+                <h3 class="summary-title">&gt; ENVIRONMENT OVERVIEW</h3>
+                <div class="catalog-table-wrapper">
+                    <table class="catalog-table">
+                        <thead>
+                            <tr>
+                                <th>CATALOG ID</th>
+                                <th>ROBOT</th>
+                                <th>STATUS</th>
+                                <th>COMPONENTS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalogTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Hololib ZIPs Section -->
+        <section id="zips" class="section tab-content">
+            <div class="section-header">
+                <h2 class="section-title">&gt; HOLOLIB ZIP FILES</h2>
+                <button class="btn btn-primary" onclick="document.getElementById('zipFileInput').click()">+ UPLOAD ZIP</button>
+            </div>
+            
+            <div class="upload-zone" id="zipUploadZone">
+                <div class="upload-content">
+                    <div class="upload-icon">📦</div>
+                    <div class="upload-text">
+                        <strong>Drop ZIP files here</strong> or click to browse
+                        <div class="upload-hint">Pre-built catalog archives (.zip)</div>
+                    </div>
+                    <input type="file" id="zipFileInput" accept=".zip" style="display: none;">
+                </div>
+            </div>
+
+            <div id="zipsList" class="list-container"></div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div id="createRobotModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>&gt; CREATE NEW ROBOT</h3>
+                <button class="modal-close" onclick="closeCreateRobotModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <label for="robotName">Robot Name:</label>
+                <input type="text" id="robotName" placeholder="my-robot" class="input">
+                <div class="hint">Use lowercase letters, numbers, and hyphens</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateRobotModal()">CANCEL</button>
+                <button class="btn btn-primary" onclick="createRobot()">CREATE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="robotDetailsModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="robotDetailsTitle">&gt; ROBOT DETAILS</h3>
+                <button class="modal-close" onclick="closeRobotDetailsModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="robotDetailsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loader">
+            <div class="terminal-loader">
+                <span class="blink">█</span> PROCESSING...
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
