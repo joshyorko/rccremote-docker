@@ -2,8 +2,9 @@
 FROM alpine:latest AS downloader
 RUN apk add --no-cache wget ca-certificates
 WORKDIR /tmp
-RUN wget https://github.com/joshyorko/rcc/releases/download/v18.8.0/rcc-linux64 -O rcc && \
-    wget https://github.com/joshyorko/rcc/releases/download/v18.8.0/rccremote-linux64 -O rccremote && \
+ARG RCC_VERSION=v18.17.1
+RUN wget https://github.com/joshyorko/rcc/releases/download/${RCC_VERSION}/rcc-linux64 -O rcc && \
+    wget https://github.com/joshyorko/rcc/releases/download/${RCC_VERSION}/rccremote-linux64 -O rccremote && \
     chmod +x rcc rccremote
 
 # Stage 2: Minimal Ubuntu runtime (glibc-based for RCC/micromamba compatibility)

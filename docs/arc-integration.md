@@ -50,7 +50,7 @@ spec:
         - -c
         - |
           # Install RCC
-          wget -O /rcc-bin/rcc https://github.com/joshyorko/rcc/releases/download/v18.7.0/rcc-linux64
+          wget -O /rcc-bin/rcc https://github.com/joshyorko/rcc/releases/download/v18.17.1/rcc-linux64
           chmod +x /rcc-bin/rcc
           
           # Configure SSL profile

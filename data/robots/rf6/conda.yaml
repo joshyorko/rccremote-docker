@@ -1,5 +1,5 @@
 # For more details on the format and content:
-# https://github.com/robocorp/rcc/blob/master/docs/recipes.md#what-is-in-condayaml
+# https://github.com/joshyorko/rcc/blob/main/docs/recipes.md#what-is-in-condayaml
 
 channels:
   - conda-forge
@@ -13,5 +13,4 @@ dependencies:
     - robotframework==7.3.2
     - pandas
     - robocorp-browser==2.3.5
-
 

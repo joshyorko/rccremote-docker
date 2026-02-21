@@ -75,7 +75,7 @@ This implementation adds enterprise-scale features to the RCC Remote Docker proj
 ### 6. Key Improvements ✅
 
 1. **Updated RCC Version**
-   - Upgraded from v17.28.4 to v18.7.0
+   - Upgraded from v17.28.4 to v18.17.1
    - Uses custom release from @joshyorko
 
 2. **Scalability**
@@ -271,7 +271,7 @@ tests/integration/test_k8s_deployment.sh
 - tests/README.md
 
 **Modified Files (3 files)**
-- Dockerfile-rcc (updated RCC version to v18.7.0)
+- Dockerfile-rcc (updated RCC version to v18.17.1)
 - README.md (added documentation links and features)
 - specs/001-streamlining-rcc-remote/tasks.md (marked completed tasks - 39/41 complete)
 
