@@ -45,6 +45,7 @@
 
 # Ignore development files
 /.devcontainer
+!/.devcontainer/.devpod-internal
 
 # Ignore Docker-related files
 /.dockerignore
