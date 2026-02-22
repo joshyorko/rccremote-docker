@@ -53,14 +53,19 @@ module RccRemote
     def fetch_catalogs
       json_result = rcc_exec("holotree", "catalogs", "--json", timeout: 10)
       if json_result.success?
-        catalogs = parse_catalog_details(preferred_output(json_result))
-        return {
-          success: true,
-          catalogs: catalogs.sort_by { |catalog| catalog[:blueprint].to_s },
-          count: catalogs.length,
-          source: "json",
-          snapshot_at: Time.current.utc.iso8601
-        }
+        json_output = preferred_output(json_result)
+        json_payload = parse_json_payload(json_output)
+
+        if json_payload.is_a?(Hash)
+          catalogs = parse_catalog_details(json_output)
+          return {
+            success: true,
+            catalogs: catalogs.sort_by { |catalog| catalog[:blueprint].to_s },
+            count: catalogs.length,
+            source: "json",
+            snapshot_at: Time.current.utc.iso8601
+          }
+        end
       end
 
       fallback_result = rcc_exec("holotree", "catalogs", timeout: 10)
@@ -178,7 +183,14 @@ module RccRemote
     end
 
     def preferred_output(result)
-      result.stderr.presence || result.stdout.to_s
+      stdout = result.stdout.to_s
+      stderr = result.stderr.to_s
+
+      if result.success?
+        stdout.presence || stderr
+      else
+        stderr.presence || stdout
+      end
     end
 
     def parse_catalogs(output)
@@ -238,11 +250,11 @@ module RccRemote
       text = output.to_s
       start_index = text.index("{")
       end_index = text.rindex("}")
-      return {} unless start_index && end_index && end_index >= start_index
+      return nil unless start_index && end_index && end_index >= start_index
 
       JSON.parse(text[start_index..end_index])
     rescue JSON::ParserError
-      {}
+      nil
     end
 
     def parse_use_count(value)
