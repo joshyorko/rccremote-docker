@@ -20,9 +20,20 @@ servers:
 #
 # Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
 #
-# proxy:
-#   ssl: true
-#   host: app.example.com
+proxy:
+  host: admin.joshyorko.com
+  app_port: 80
+  ssl_redirect: true
+  forward_headers: true
+  ssl:
+    # DNS-01 issued certs (for private homelab without exposing 80/443 publicly).
+    # Keep these variables in .kamal/secrets as command substitutions that read current cert files.
+    certificate_pem: KAMAL_SSL_CERTIFICATE_PEM
+    private_key_pem: KAMAL_SSL_PRIVATE_KEY_PEM
+  run:
+    # Bind only on LAN address so the service is not exposed directly on other host interfaces.
+    bind_ips:
+      - 192.168.0.1
 
 # Where you keep your container images.
 registry:
@@ -44,6 +55,7 @@ env:
     # RCC runtime inside the Rails container (no sidecar nginx/rccremote needed).
     RCC_EXECUTION_MODE: local
     RCC_BINARY: /usr/local/bin/rcc
+    RAILS_FORCE_SSL: true
 
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
