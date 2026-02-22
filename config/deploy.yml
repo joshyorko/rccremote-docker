@@ -7,7 +7,7 @@ image: rccremote_docker
 # Deploy to these servers.
 servers:
   web:
-    - 192.168.0.1
+    - 10.10.10.106
   # job:
   #   hosts:
   #     - 192.168.0.1
@@ -33,7 +33,7 @@ proxy:
   run:
     # Bind only on LAN address so the service is not exposed directly on other host interfaces.
     bind_ips:
-      - 192.168.0.1
+      - 10.10.10.106
 
 # Where you keep your container images.
 registry:
@@ -107,8 +107,8 @@ builder:
   #   - RAILS_MASTER_KEY
 
 # Use a different ssh user than root
-# ssh:
-#   user: app
+ssh:
+  user: kdlocpanda
 
 # Use accessory services (secrets come from .kamal/secrets).
 # accessories:
