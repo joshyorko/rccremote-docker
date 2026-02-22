@@ -34,7 +34,11 @@
           <%= nav_link_to "Hololib ZIPs", hololib_zips_path %>
         </nav>
 
-        <div class="top-bar__lane top-bar__lane--right" aria-hidden="true"></div>
+        <div class="top-bar__lane top-bar__lane--right">
+          <% if authenticated? %>
+            <%= link_to "Log out", session_path, data: { turbo_method: :delete }, class: "nav-link" %>
+          <% end %>
+        </div>
       </header>
 
       <main class="page">
