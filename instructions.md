@@ -22,7 +22,7 @@ As of February 21, 2026, this is a solid command flow:
 
   Then create your app:
 
-  rails _8.1.2_ new rails-rccremote --database=postgresql --css=tailwind
+  rails _8.1.2_ new rails-rccremote --database=sqlite3 --css=tailwind
   cd rails-rccremote
   bin/rails generate authentication
   bin/rails db:create db:migrate
