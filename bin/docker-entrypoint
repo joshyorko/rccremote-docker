@@ -5,4 +5,10 @@ if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
   ./bin/rails db:prepare
 fi
 
+# Ensure the Rails container uses shared holotree paths (same as rccremote service).
+if command -v rcc >/dev/null 2>&1; then
+  rcc holotree shared -e >/dev/null 2>&1 || true
+  rcc holotree init >/dev/null 2>&1 || true
+fi
+
 exec "${@}"

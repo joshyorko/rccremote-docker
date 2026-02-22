@@ -5,7 +5,7 @@ set -euo pipefail
 # and reloads the Kamal proxy with updated PEM values.
 #
 # Usage:
-#   script/renew_tls_cert.sh [domain]
+#   script/renew_tls_cert.sh [domain ...]
 #
 # Required:
 #   CLOUDFLARE_CREDENTIALS_FILE -> path to certbot cloudflare ini file
@@ -15,7 +15,13 @@ set -euo pipefail
 #   DNS_PROPAGATION_SECONDS     -> default 30
 #   RELOAD_PROXY                -> 1 (default) to run `bin/kamal proxy reboot`
 
-DOMAIN="${1:-admin.joshyorko.com}"
+if [ "$#" -gt 0 ]; then
+  DOMAINS=("$@")
+else
+  DOMAINS=("admin.joshyorko.com" "rccremote.joshyorko.com")
+fi
+
+PRIMARY_DOMAIN="${DOMAINS[0]}"
 LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-joshua.yorko@gmail.com}"
 CLOUDFLARE_CREDENTIALS_FILE="${CLOUDFLARE_CREDENTIALS_FILE:-$HOME/.secrets/certbot/cloudflare.ini}"
 DNS_PROPAGATION_SECONDS="${DNS_PROPAGATION_SECONDS:-30}"
@@ -23,7 +29,7 @@ RELOAD_PROXY="${RELOAD_PROXY:-1}"
 CERTBOT_CONFIG_DIR="${CERTBOT_CONFIG_DIR:-$HOME/.config/letsencrypt}"
 CERTBOT_WORK_DIR="${CERTBOT_WORK_DIR:-$HOME/.local/share/letsencrypt/work}"
 CERTBOT_LOGS_DIR="${CERTBOT_LOGS_DIR:-$HOME/.local/share/letsencrypt/logs}"
-CERT_LIVE_DIR="${CERTBOT_CONFIG_DIR}/live/${DOMAIN}"
+CERT_LIVE_DIR="${CERTBOT_CONFIG_DIR}/live/${PRIMARY_DOMAIN}"
 
 if ! command -v certbot >/dev/null 2>&1; then
   echo "certbot is not installed. Install certbot + dns-cloudflare plugin first." >&2
@@ -36,11 +42,17 @@ if [ ! -f "$CLOUDFLARE_CREDENTIALS_FILE" ]; then
 fi
 
 chmod 600 "$CLOUDFLARE_CREDENTIALS_FILE"
+certbot_args=()
+for domain in "${DOMAINS[@]}"; do
+  certbot_args+=(-d "$domain")
+done
 
 certbot certonly \
   --non-interactive \
   --agree-tos \
   --keep-until-expiring \
+  --cert-name "$PRIMARY_DOMAIN" \
+  --expand \
   --config-dir "$CERTBOT_CONFIG_DIR" \
   --work-dir "$CERTBOT_WORK_DIR" \
   --logs-dir "$CERTBOT_LOGS_DIR" \
@@ -48,7 +60,7 @@ certbot certonly \
   --dns-cloudflare \
   --dns-cloudflare-credentials "$CLOUDFLARE_CREDENTIALS_FILE" \
   --dns-cloudflare-propagation-seconds "$DNS_PROPAGATION_SECONDS" \
-  -d "$DOMAIN"
+  "${certbot_args[@]}"
 
 if [ ! -f "$CERT_LIVE_DIR/fullchain.pem" ] || [ ! -f "$CERT_LIVE_DIR/privkey.pem" ]; then
   echo "Expected certificate files are missing in $CERT_LIVE_DIR" >&2
@@ -67,7 +79,7 @@ fi
 
 if [ "$RELOAD_PROXY" = "1" ]; then
   bin/kamal proxy reboot
-  echo "Kamal proxy reloaded with updated TLS material for $DOMAIN"
+  echo "Kamal proxy reloaded with updated TLS material for ${DOMAINS[*]}"
 else
-  echo "Certificate ready for $DOMAIN. Run: bin/kamal proxy reboot"
+  echo "Certificate ready for ${DOMAINS[*]}. Run: bin/kamal proxy reboot"
 fi

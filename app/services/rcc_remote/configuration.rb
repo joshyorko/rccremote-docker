@@ -49,6 +49,10 @@ module RccRemote
       4653
     end
 
+    def rcc_remote_origin
+      ENV.fetch("RCC_REMOTE_ORIGIN", "").to_s
+    end
+
     def rcc_container_name
       ENV.fetch("RCC_CONTAINER_NAME", "rccremote-dev")
     end

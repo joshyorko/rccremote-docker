@@ -50,3 +50,8 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+!/Dockerfile
+!/Dockerfile.rccremote
+
+# Ignore archived legacy repo snapshot
+/test_archived

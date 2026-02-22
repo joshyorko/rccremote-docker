@@ -37,5 +37,5 @@ for host in "${HOST_ARRAY[@]}"; do
 
   echo "docker-setup: installing certbot tooling on ${SSH_USER}@${host}"
   ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new "${SSH_USER}@${host}" \
-    "sudo apt-get update && sudo apt-get install -y certbot python3-certbot-dns-cloudflare && mkdir -p ~/.secrets/certbot ~/.config/letsencrypt ~/.local/share/letsencrypt/work ~/.local/share/letsencrypt/logs && chmod 700 ~/.secrets/certbot"
+    "sudo apt-get update && sudo apt-get install -y certbot python3-certbot-dns-cloudflare && mkdir -p ~/.secrets/certbot ~/.config/letsencrypt ~/.local/share/letsencrypt/work ~/.local/share/letsencrypt/logs ~/rccremote-data/robots ~/rccremote-data/hololib_zip ~/rccremote-data/hololib_internal ~/rccremote-data/robocorp && chmod 700 ~/.secrets/certbot"
 done

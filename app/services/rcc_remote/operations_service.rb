@@ -10,6 +10,7 @@ module RccRemote
     def initialize(config: Configuration.new, command_runner: CommandRunner.new)
       @config = config
       @command_runner = command_runner
+      @local_holotree_prepared = false
     end
 
     def rcc_info
@@ -158,6 +159,9 @@ module RccRemote
 
     def rcc_exec(*args, timeout:)
       if local_mode?
+        setup_result = ensure_local_shared_holotree
+        return setup_result unless setup_result.nil?
+
         command_runner.run(config.rcc_binary, *args, timeout:)
       else
         docker_exec("rcc", *args, timeout:)
@@ -166,6 +170,21 @@ module RccRemote
 
     def local_mode?
       config.rcc_execution_mode == "local"
+    end
+
+    # Local Rails mode must run RCC in shared holotree mode so it uses
+    # the same catalog/library paths as the dedicated rccremote service.
+    def ensure_local_shared_holotree
+      return nil if @local_holotree_prepared
+
+      shared_result = command_runner.run(config.rcc_binary, "holotree", "shared", "-e", timeout: 20)
+      return shared_result unless shared_result.success?
+
+      init_result = command_runner.run(config.rcc_binary, "holotree", "init", timeout: 20)
+      return init_result unless init_result.success?
+
+      @local_holotree_prepared = true
+      nil
     end
 
     def docker_exec(*args, timeout:)

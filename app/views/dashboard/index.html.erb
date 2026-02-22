@@ -4,6 +4,7 @@
 <% rcc_available = @status.rcc.fetch(:available, false) %>
 <% rcc_mode = @status.services.dig(:rccremote, :mode).presence || "unknown" %>
 <% rcc_command = @status.services.dig(:rccremote, :command).presence || "n/a" %>
+<% rcc_origin = @status.services.dig(:rccremote, :origin).presence %>
 <% robots_count = @status.statistics.fetch(:robots, 0) %>
 <% catalogs_count = @status.statistics.fetch(:catalogs, 0) %>
 <% zips_count = @status.statistics.fetch(:hololib_zips, 0) %>
@@ -99,6 +100,9 @@
 
     <div class="telemetry-footnotes">
       <p><strong>RCC command:</strong> <code><%= rcc_command %></code></p>
+      <% if rcc_origin.present? %>
+        <p><strong>RCC origin:</strong> <code><%= rcc_origin %></code></p>
+      <% end %>
       <p><strong>Robots path:</strong> <code><%= @status.paths.fetch(:robots, "n/a") %></code></p>
       <p><strong>Hololib ZIP path:</strong> <code><%= @status.paths.fetch(:hololib_zip, "n/a") %></code></p>
       <% if rcc_index_url.present? %>

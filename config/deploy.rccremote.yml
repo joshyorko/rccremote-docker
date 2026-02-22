@@ -1,0 +1,62 @@
+# Dedicated Kamal deployment for the RCC Remote daemon service.
+#
+# Deploy with:
+#   bin/kamal setup -c config/deploy.rccremote.yml
+#   bin/kamal deploy -c config/deploy.rccremote.yml
+service: rccremote_service
+image: rccremote_service
+
+servers:
+  web:
+    hosts:
+      - 10.10.10.106
+
+proxy:
+  host: rccremote.joshyorko.com
+  app_port: 4653
+  ssl_redirect: true
+  forward_headers: true
+  ssl:
+    certificate_pem: KAMAL_SSL_CERTIFICATE_PEM
+    private_key_pem: KAMAL_SSL_PRIVATE_KEY_PEM
+  healthcheck:
+    # rccremote has no native /health endpoint; /force/* returns 200.
+    path: /force/_kamal_health
+    interval: 2
+    timeout: 5
+  run:
+    bind_ips:
+      - 10.10.10.106
+
+registry:
+  server: localhost:5555
+
+env:
+  clear:
+    SERVER_NAME: rccremote.joshyorko.com
+    ROBOCORP_HOME: /opt/robocorp
+    ROBOTS_PATH: /robots
+    HOLOLIB_ZIP_PATH: /hololib_zip
+    HOLOLIB_ZIP_PATH_INT: /hololib_zip_internal
+    RCCREMOTE_PORT: "4653"
+
+deploy_timeout: 900
+readiness_delay: 5
+
+volumes:
+  - "/home/kdlocpanda/rccremote-data/robots:/robots"
+  - "/home/kdlocpanda/rccremote-data/hololib_zip:/hololib_zip"
+  - "/home/kdlocpanda/rccremote-data/hololib_internal:/hololib_zip_internal"
+  - "/home/kdlocpanda/rccremote-data/robocorp:/opt/robocorp"
+
+builder:
+  arch: amd64
+  dockerfile: Dockerfile.rccremote
+  context: .
+
+ssh:
+  user: kdlocpanda
+
+aliases:
+  shell: app exec --interactive --reuse "bash"
+  logs: app logs -f

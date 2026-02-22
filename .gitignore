@@ -38,3 +38,4 @@
 !/app/assets/builds/.keep
 
 /vendor/bundle
+test_archived/

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "socket"
+require "uri"
 
 module RccRemote
   class StatusService
@@ -58,10 +59,13 @@ module RccRemote
 
     def rcc_service_payload(rcc)
       if config.rcc_execution_mode == "local"
+        remote_running = remote_origin_reachable? || rcc[:available]
+
         {
-          running: rcc[:available],
+          running: remote_running,
           mode: "local",
-          command: config.rcc_binary
+          command: config.rcc_binary,
+          origin: config.rcc_remote_origin.presence
         }
       else
         {
@@ -78,6 +82,19 @@ module RccRemote
       Socket.tcp(host, port, connect_timeout: 2) { |socket| socket.close }
       true
     rescue StandardError
+      false
+    end
+
+    def remote_origin_reachable?
+      origin = config.rcc_remote_origin.to_s.strip
+      return false if origin.empty?
+
+      uri = URI.parse(origin)
+      return false if uri.host.blank?
+
+      port = uri.port || (uri.scheme == "https" ? 443 : 80)
+      tcp_open?(uri.host, port)
+    rescue URI::InvalidURIError
       false
     end
   end

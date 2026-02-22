@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1
+# check=error=true
+
+ARG RCC_VERSION=v18.17.2
+
+FROM ubuntu:22.04 AS downloader
+ARG RCC_VERSION
+
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y ca-certificates curl && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+WORKDIR /tmp
+RUN curl -fsSL "https://github.com/joshyorko/rcc/releases/download/${RCC_VERSION}/rcc-linux64" -o rcc && \
+    curl -fsSL "https://github.com/joshyorko/rcc/releases/download/${RCC_VERSION}/rccremote-linux64" -o rccremote && \
+    chmod +x rcc rccremote
+
+FROM ubuntu:22.04
+
+ENV LANG=C.UTF-8 \
+    LANGUAGE=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y bash ca-certificates && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+COPY --from=downloader /tmp/rcc /usr/local/bin/rcc
+COPY --from=downloader /tmp/rccremote /usr/local/bin/rccremote
+COPY script/entrypoint-rccremote.sh /usr/local/bin/entrypoint-rccremote.sh
+
+RUN chmod +x /usr/local/bin/entrypoint-rccremote.sh && \
+    groupadd --system --gid 1000 app && \
+    useradd app --uid 1000 --gid 1000 --create-home --shell /bin/bash
+
+USER 1000:1000
+
+EXPOSE 4653
+ENTRYPOINT ["/usr/local/bin/entrypoint-rccremote.sh"]
