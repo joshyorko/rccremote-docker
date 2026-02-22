@@ -3,27 +3,36 @@
 class Catalog
   include ActiveModel::Model
 
-  attr_accessor :raw_line
+  attr_accessor :blueprint, :platform, :directories, :files, :bytes,
+                :relocations, :age_in_days, :days_since_last_use,
+                :identity_yaml, :holotree
 
-  validates :raw_line, presence: true
+  def identity_key
+    return nil if identity_yaml.blank?
 
-  def catalog_id
-    parts = raw_line.to_s.split(/\s+/)
-    parts.find { |token| token.match?(/\A[a-f0-9]{16,}\z/) } || raw_line.to_s.first(16)
+    identity_yaml.to_s.split("/").last
   end
 
-  def robot_name
-    raw_line.to_s.split(/\s+/).first || "unknown"
+  def stale?
+    return false if days_since_last_use.nil?
+
+    days_since_last_use.to_i >= 30
   end
 
-  def components
-    [ "Python Environment", "Conda Dependencies", "RCC Runtime" ]
+  def active?
+    !stale?
+  end
+
+  def status
+    return :unknown if days_since_last_use.nil?
+
+    stale? ? :stale : :active
   end
 
   class << self
     def fetch(operations: default_operations)
       result = operations.fetch_catalogs
-      catalogs = result[:success] ? result[:catalogs].map { |line| new(raw_line: line) } : []
+      catalogs = result[:success] ? result[:catalogs].map { |attributes| new(attributes) } : []
       [ catalogs, result ]
     end
 

@@ -5,6 +5,8 @@ Rails.application.routes.draw do
 
   resources :robots, only: %i[index show create destroy] do
     post :upload, on: :member
+    get :edit_files, on: :member
+    patch :update_files, on: :member
   end
 
   resources :catalogs, only: %i[index] do

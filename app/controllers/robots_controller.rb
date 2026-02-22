@@ -1,11 +1,17 @@
 class RobotsController < ApplicationController
-  before_action :set_robot, only: :show
+  before_action :set_robot, only: %i[show edit_files update_files]
 
   def index
     @robots = Robot.all
   end
 
   def show
+    return if @robot
+
+    redirect_to robots_path, alert: "Robot not found"
+  end
+
+  def edit_files
     return if @robot
 
     redirect_to robots_path, alert: "Robot not found"
@@ -53,6 +59,30 @@ class RobotsController < ApplicationController
     flash[:alert] = result[:errors].first(3).join("; ") if result[:errors].any?
 
     redirect_to robot_path(params[:id])
+  end
+
+  def update_files
+    unless @robot
+      redirect_to robots_path, alert: "Robot not found"
+      return
+    end
+
+    result = Robot.update_core_files(
+      @robot.name,
+      robot_yaml: params[:robot_yaml],
+      conda_yaml: params[:conda_yaml]
+    )
+
+    case result[:status]
+    when :updated
+      redirect_to robot_path(@robot.name), notice: "robot.yaml and conda.yaml saved"
+    when :invalid
+      redirect_to robot_path(@robot.name), alert: result[:error]
+    when :missing
+      redirect_to robots_path, alert: result[:error]
+    else
+      redirect_to robot_path(@robot.name), alert: result[:error] || "Failed to save files"
+    end
   end
 
   private

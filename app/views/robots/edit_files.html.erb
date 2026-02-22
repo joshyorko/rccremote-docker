@@ -1,0 +1,20 @@
+<% content_for :title, "Edit Core Files #{@robot.name} | Rails RCC Remote" %>
+
+<section class="panel">
+  <div class="panel-header">
+    <h1 class="panel-title">Edit core files: <%= @robot.name %></h1>
+  </div>
+
+  <%= form_with url: update_files_robot_path(@robot.name), method: :patch do %>
+    <label class="editor-label" for="robot_yaml">robot.yaml</label>
+    <%= text_area_tag :robot_yaml, @robot.files.fetch("robot.yaml", ""), rows: 18, class: "code-input" %>
+
+    <label class="editor-label" for="conda_yaml">conda.yaml</label>
+    <%= text_area_tag :conda_yaml, @robot.files.fetch("conda.yaml", ""), rows: 16, class: "code-input" %>
+
+    <div class="button-row">
+      <%= submit_tag "Save Files", class: "button button-primary" %>
+      <%= link_to "Cancel", robot_path(@robot.name), class: "button" %>
+    </div>
+  <% end %>
+</section>

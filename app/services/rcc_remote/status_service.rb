@@ -28,12 +28,22 @@ module RccRemote
         },
         rcc: {
           version: rcc[:version],
-          available: rcc[:available]
+          available: rcc[:available],
+          catalog_total_bytes: rcc[:catalog_total_bytes],
+          newest_catalog_age_days: rcc[:newest_catalog_age_days],
+          most_used_space: rcc[:most_used_space],
+          settings_profile: rcc[:settings_profile],
+          settings_version: rcc[:settings_version],
+          ssl_verify: rcc[:ssl_verify],
+          diagnostics_hosts_count: rcc[:diagnostics_hosts_count],
+          rcc_index_url: rcc[:rcc_index_url]
         },
         statistics: {
           robots: storage.robot_count,
           catalogs: rcc[:catalog_count],
-          hololib_zips: storage.zip_count
+          hololib_zips: storage.zip_count,
+          holotree_spaces: rcc[:space_count],
+          active_blueprints: rcc[:active_blueprints]
         },
         paths: {
           robots: config.robots_path.to_s,

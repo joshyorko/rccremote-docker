@@ -8,29 +8,42 @@
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "actiontext", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
   <body>
-    <header class="top-bar">
-      <div class="top-bar__title">
-        <span class="cursor">█</span>
-        RAILS RCC REMOTE
-      </div>
-      <nav class="top-bar__nav">
-        <%= nav_link_to "Dashboard", root_path %>
-        <%= nav_link_to "Robots", robots_path %>
-        <%= nav_link_to "Catalogs", catalogs_path %>
-        <%= nav_link_to "Hololib Zips", hololib_zips_path %>
-      </nav>
-    </header>
+    <div class="app-shell">
+      <header class="top-bar">
+        <div class="top-bar__lane top-bar__lane--left">
+          <div class="brand-wrap">
+            <%= link_to root_path, class: "brand" do %>
+              <span class="brand-mark" aria-hidden="true">RR</span>
+              <span class="brand-text">
+                <strong>Rails RCC Remote</strong>
+                <small>Automation control plane</small>
+              </span>
+            <% end %>
+          </div>
+        </div>
 
-    <main class="page">
-      <% flash.each do |type, message| %>
-        <div class="flash <%= type %>"><%= message %></div>
-      <% end %>
+        <nav class="top-bar__nav top-bar__nav--omakase" aria-label="Primary">
+          <%= nav_link_to "Dashboard", root_path %>
+          <%= nav_link_to "Robots", robots_path %>
+          <%= nav_link_to "Catalogs", catalogs_path %>
+          <%= nav_link_to "Hololib ZIPs", hololib_zips_path %>
+        </nav>
 
-      <%= yield %>
-    </main>
+        <div class="top-bar__lane top-bar__lane--right" aria-hidden="true"></div>
+      </header>
+
+      <main class="page">
+        <% flash.each do |type, message| %>
+          <div class="flash <%= type %>"><%= message %></div>
+        <% end %>
+
+        <%= yield %>
+      </main>
+    </div>
   </body>
 </html>

@@ -25,7 +25,7 @@ class HololibZipsControllerTest < ActionDispatch::IntegrationTest
     get hololib_zips_url
 
     assert_response :success
-    assert_includes response.body, "HOLOLIB ZIP FILES"
+    assert_includes response.body, "Hololib ZIP files"
   end
 
   test "upload with no file redirects" do

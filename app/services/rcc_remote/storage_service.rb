@@ -106,6 +106,25 @@ module RccRemote
       }
     end
 
+    def update_robot_core_files(robot_name, robot_yaml:, conda_yaml:)
+      robot_path = robot_path_for(robot_name)
+      return { status: :missing, error: "Robot not found" } unless robot_path&.directory?
+
+      robot_yaml_content = robot_yaml.to_s
+      conda_yaml_content = conda_yaml.to_s
+
+      if robot_yaml_content.blank? || conda_yaml_content.blank?
+        return { status: :invalid, error: "robot.yaml and conda.yaml are required" }
+      end
+
+      robot_path.join("robot.yaml").write(robot_yaml_content)
+      robot_path.join("conda.yaml").write(conda_yaml_content)
+
+      { status: :updated, name: robot_path.basename.to_s }
+    rescue StandardError => e
+      { status: :error, error: e.message }
+    end
+
     def list_hololib_zips
       ensure_directory(config.hololib_zip_path)
 

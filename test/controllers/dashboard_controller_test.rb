@@ -5,6 +5,6 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     get root_url
 
     assert_response :success
-    assert_includes response.body, "SYSTEM STATUS"
+    assert_includes response.body, "System status"
   end
 end

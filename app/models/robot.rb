@@ -49,6 +49,10 @@ class Robot
       storage.upload_robot_files(name, files)
     end
 
+    def update_core_files(name, robot_yaml:, conda_yaml:, storage: default_storage)
+      storage.update_robot_core_files(name, robot_yaml:, conda_yaml:)
+    end
+
     private
 
     def build(attributes)

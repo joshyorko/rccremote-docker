@@ -1,4 +1,7 @@
-<article class="stat-card <%= state_class %>">
-  <div class="stat-label"><%= label %></div>
-  <div class="stat-value"><%= value %></div>
+<article class="metric-card <%= state_class %>">
+  <p class="metric-card__label"><%= label %></p>
+  <p class="metric-card__value"><%= value %></p>
+  <% if local_assigns[:hint].present? %>
+    <p class="metric-card__hint"><%= hint %></p>
+  <% end %>
 </article>

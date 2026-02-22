@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "shellwords"
 
 module RccRemote
@@ -13,37 +14,85 @@ module RccRemote
 
     def rcc_info
       version_result = rcc_exec("--version", timeout: 5)
-      catalogs_result = rcc_exec("holotree", "catalogs", timeout: 10)
+      catalogs_json_result = rcc_exec("holotree", "catalogs", "--json", timeout: 10)
+      spaces_json_result = rcc_exec("holotree", "list", "--json", timeout: 10)
+      config_json_result = rcc_exec("config", "settings", "--json", timeout: 10)
 
-      catalogs = catalogs_result.success? ? parse_catalogs(preferred_output(catalogs_result)) : []
+      catalog_details = catalogs_json_result.success? ? parse_catalog_details(preferred_output(catalogs_json_result)) : []
+      space_details = spaces_json_result.success? ? parse_space_details(preferred_output(spaces_json_result)) : []
+      config_details = config_json_result.success? ? parse_config_details(preferred_output(config_json_result)) : {}
+      most_used_space = space_details.max_by { |space| space[:use_count].to_i }
+      catalog_count = if catalog_details.any?
+        catalog_details.length
+      else
+        fetch_catalog_count_fallback
+      end
+      space_count = if space_details.any?
+        space_details.length
+      else
+        fetch_space_count_fallback
+      end
 
       {
         version: version_result.success? ? preferred_output(version_result).strip.presence || "unknown" : "unknown",
         available: version_result.success?,
-        catalog_count: catalogs.length
+        catalog_count: catalog_count,
+        catalog_total_bytes: catalog_details.sum { |catalog| catalog[:bytes].to_i },
+        newest_catalog_age_days: catalog_details.map { |catalog| catalog[:age_in_days] }.compact.min,
+        space_count: space_count,
+        active_blueprints: space_details.map { |space| space[:blueprint] }.compact.uniq.length,
+        most_used_space:,
+        settings_profile: config_details[:profile_name],
+        settings_version: config_details[:profile_version],
+        ssl_verify: config_details[:ssl_verify],
+        diagnostics_hosts_count: config_details.fetch(:diagnostics_hosts_count, 0),
+        rcc_index_url: config_details[:rcc_index_url]
       }
     end
 
     def fetch_catalogs
-      result = rcc_exec("holotree", "catalogs", timeout: 10)
-      output = preferred_output(result)
-
-      if result.success?
-        catalogs = parse_catalogs(output)
-
-        {
+      json_result = rcc_exec("holotree", "catalogs", "--json", timeout: 10)
+      if json_result.success?
+        catalogs = parse_catalog_details(preferred_output(json_result))
+        return {
           success: true,
-          catalogs:,
+          catalogs: catalogs.sort_by { |catalog| catalog[:blueprint].to_s },
           count: catalogs.length,
-          raw_output: output
-        }
-      else
-        {
-          success: false,
-          error: "Failed to retrieve catalogs",
-          details: result.stderr.presence || result.stdout
+          source: "json",
+          snapshot_at: Time.current.utc.iso8601
         }
       end
+
+      fallback_result = rcc_exec("holotree", "catalogs", timeout: 10)
+      output = preferred_output(fallback_result)
+      return {
+        success: false,
+        error: "Failed to retrieve catalogs",
+        details: output
+      } unless fallback_result.success?
+
+      catalogs = parse_catalogs(output).map do |blueprint|
+        {
+          blueprint: blueprint,
+          platform: nil,
+          directories: nil,
+          files: nil,
+          bytes: nil,
+          relocations: nil,
+          age_in_days: nil,
+          days_since_last_use: nil,
+          identity_yaml: nil,
+          holotree: nil
+        }
+      end
+
+      {
+        success: true,
+        catalogs:,
+        count: catalogs.length,
+        source: "text",
+        snapshot_at: Time.current.utc.iso8601
+      }
     end
 
     def rebuild_catalogs
@@ -133,8 +182,114 @@ module RccRemote
     end
 
     def parse_catalogs(output)
-      output.to_s.each_line.map(&:strip).reject do |line|
-        line.blank? || CATALOG_PREFIX_EXCLUSIONS.any? { |prefix| line.start_with?(prefix) }
+      output.to_s.each_line.filter_map do |line|
+        stripped = line.strip
+        next if stripped.blank?
+        next if CATALOG_PREFIX_EXCLUSIONS.any? { |prefix| stripped.start_with?(prefix) }
+
+        stripped.split(/\s+/).find { |token| token.match?(/\A[0-9a-f]{16,}\z/i) }
+      end.uniq
+    end
+
+    def parse_catalog_details(output)
+      payload = parse_json_payload(output)
+      return [] unless payload.is_a?(Hash)
+
+      payload.filter_map do |blueprint_key, row|
+        next unless row.is_a?(Hash)
+
+        blueprint = row["blueprint"].to_s.presence || blueprint_key.to_s
+        next if blueprint.blank?
+
+        {
+          blueprint:,
+          platform: row["platform"].to_s.presence,
+          directories: integer_or_nil(row["directories"]),
+          files: integer_or_nil(row["files"]),
+          bytes: row["bytes"].to_i,
+          relocations: integer_or_nil(row["relocations"]),
+          age_in_days: integer_or_nil(row["age_in_days"]),
+          days_since_last_use: integer_or_nil(row["days_since_last_use"]),
+          identity_yaml: row["identity.yaml"].to_s.presence,
+          holotree: row["holotree"].to_s.presence
+        }
+      end
+    end
+
+    def parse_space_details(output)
+      payload = parse_json_payload(output)
+      return [] unless payload.is_a?(Hash)
+
+      payload.values.filter_map do |row|
+        id = row["id"].to_s
+        next if id.blank?
+
+        {
+          id:,
+          blueprint: row["blueprint"].to_s.presence,
+          last_used: row["last-used"].to_s.presence,
+          idle_days: integer_or_nil(row["idle-days"]),
+          use_count: parse_use_count(row["use-count"])
+        }
+      end
+    end
+
+    def parse_json_payload(output)
+      text = output.to_s
+      start_index = text.index("{")
+      end_index = text.rindex("}")
+      return {} unless start_index && end_index && end_index >= start_index
+
+      JSON.parse(text[start_index..end_index])
+    rescue JSON::ParserError
+      {}
+    end
+
+    def parse_use_count(value)
+      match = value.to_s.match(/\d+/)
+      match ? match[0].to_i : 0
+    end
+
+    def parse_config_details(output)
+      payload = parse_json_payload(output)
+      return {} unless payload.is_a?(Hash)
+
+      meta = payload["meta"].is_a?(Hash) ? payload["meta"] : {}
+      certificates = payload["certificates"].is_a?(Hash) ? payload["certificates"] : {}
+      autoupdates = payload["autoupdates"].is_a?(Hash) ? payload["autoupdates"] : {}
+
+      {
+        profile_name: meta["name"].to_s.presence,
+        profile_version: meta["version"].to_s.presence,
+        ssl_verify: certificates["verify-ssl"],
+        diagnostics_hosts_count: Array(payload["diagnostics-hosts"]).length,
+        rcc_index_url: autoupdates["rcc-index"].to_s.presence
+      }
+    end
+
+    def integer_or_nil(value)
+      Integer(value)
+    rescue ArgumentError, TypeError
+      nil
+    end
+
+    def fetch_catalog_count_fallback
+      result = rcc_exec("holotree", "catalogs", timeout: 10)
+      return 0 unless result.success?
+
+      parse_catalogs(preferred_output(result)).length
+    end
+
+    def fetch_space_count_fallback
+      result = rcc_exec("holotree", "list", timeout: 10)
+      return 0 unless result.success?
+
+      preferred_output(result).to_s.each_line.count do |line|
+        stripped = line.strip
+        next false if stripped.blank?
+        next false if stripped.start_with?("Identity", "--------")
+
+        true
       end
     end
 

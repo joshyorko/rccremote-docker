@@ -2,7 +2,7 @@
 
 <section class="panel">
   <div class="panel-header">
-    <h1 class="panel-title">&gt; ROBOT: <%= @robot.name %></h1>
+    <h1 class="panel-title">Robot: <%= @robot.name %></h1>
     <%= link_to "Back", robots_path, class: "button" %>
   </div>
 
@@ -19,7 +19,7 @@
 </section>
 
 <section class="panel">
-  <h2 class="panel-title">&gt; UPLOAD FILES</h2>
+  <h2 class="panel-title">Upload files</h2>
   <%= form_with url: upload_robot_path(@robot.name), method: :post, multipart: true, class: "form-row" do %>
     <%= file_field_tag "files[]", multiple: true, class: "input" %>
     <%= submit_tag "Upload", class: "button button-primary" %>
@@ -27,19 +27,20 @@
 </section>
 
 <section class="panel">
-  <h2 class="panel-title">&gt; CORE FILE CONTENT</h2>
-  <% if @robot.files.empty? %>
-    <p class="empty">No robot core files found.</p>
-  <% else %>
-    <% @robot.files.each do |filename, content| %>
-      <h3 class="subheading"><%= filename %></h3>
-      <pre class="terminal"><%= content %></pre>
-    <% end %>
-  <% end %>
+  <div class="panel-header">
+    <h2 class="panel-title">Core file content</h2>
+    <%= link_to "Edit Core Files", edit_files_robot_path(@robot.name), class: "button button-primary" %>
+  </div>
+
+  <h3 class="subheading">robot.yaml</h3>
+  <pre class="terminal"><%= @robot.files.fetch("robot.yaml", "robot.yaml not found") %></pre>
+
+  <h3 class="subheading">conda.yaml</h3>
+  <pre class="terminal"><%= @robot.files.fetch("conda.yaml", "conda.yaml not found") %></pre>
 </section>
 
 <section class="panel">
-  <h2 class="panel-title">&gt; ALL FILES</h2>
+  <h2 class="panel-title">All files</h2>
   <% if @robot.all_files.empty? %>
     <p class="empty">No files found.</p>
   <% else %>
