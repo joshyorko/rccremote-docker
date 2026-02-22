@@ -12,6 +12,9 @@ ARG RUBY_VERSION=3.4.8
 ARG RCC_VERSION=v18.17.2
 FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
+# Re-declare build arg so it's available after FROM
+ARG RCC_VERSION
+
 # Rails app lives here
 WORKDIR /rails
 
