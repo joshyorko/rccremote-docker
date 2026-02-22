@@ -3,6 +3,7 @@
 This project is designed so DevPods can be ephemeral. Keep long-lived secrets and cert state on the homelab server.
 
 Server target:
+
 - Host: `10.10.10.106`
 - User: `kdlocpanda`
 - Domain: `admin.joshyorko.com`
@@ -49,17 +50,25 @@ ssh-add ~/.ssh/id_ed25519
 If your DevPod does not include your host key automatically, copy/mount your SSH private key into the DevPod before deploying.
 
 Hook behavior in this repo:
+
 - `.kamal/hooks/pre-connect` verifies SSH connectivity to all target hosts before commands run.
 - `.kamal/hooks/docker-setup` installs `certbot` + Cloudflare DNS plugin during `kamal server bootstrap`.
 
 ## 2) One-time Server Bootstrap
 
 Use Kamal to install/provision Docker on the target server.
-This also runs `.kamal/hooks/docker-setup` in this repo:
+This also runs `.kamal/hooks/docker-setup` in this repo, which:
+
+- Adds the SSH user (`kdlocpanda`) to the `docker` group so it can access the Docker socket without `sudo`.
+- Installs `certbot` + Cloudflare DNS plugin for TLS certificate management.
 
 ```bash
 bin/kamal server bootstrap
 ```
+
+> **Note:** The docker group change requires the SSH session to be refreshed.
+> If you see `permission denied` errors on the Docker socket after bootstrap,
+> log out and back in on the server, or run `newgrp docker` in the active session.
 
 Optional cloud-init excerpt (if reprovisioning server):
 
@@ -79,7 +88,7 @@ Run these commands on the server (or via SSH command wrapper):
 ```bash
 ssh kdlocpanda@10.10.10.106 "mkdir -p ~/.secrets/certbot && chmod 700 ~/.secrets/certbot"
 ssh kdlocpanda@10.10.10.106 "cat > ~/.secrets/certbot/cloudflare.ini <<'EOF'
-dns_cloudflare_api_token = REPLACE_WITH_CLOUDFLARE_DNS_EDIT_TOKEN
+dns_cloudflare_api_token = isXnJJBtkPVaGY3CLRL5Ciu-tsZGKHxcnJPnyLJG
 EOF"
 ssh kdlocpanda@10.10.10.106 "chmod 600 ~/.secrets/certbot/cloudflare.ini"
 ```
@@ -100,6 +109,7 @@ ssh kdlocpanda@10.10.10.106 "certbot certonly \
 ```
 
 The Kamal secrets in this repo already read certs from:
+
 - `/home/kdlocpanda/.config/letsencrypt/live/admin.joshyorko.com/fullchain.pem`
 - `/home/kdlocpanda/.config/letsencrypt/live/admin.joshyorko.com/privkey.pem`
 
@@ -114,6 +124,7 @@ bin/kamal deploy
 ## 6) Cloudflare DNS Notes
 
 For private homelab access, use local/split DNS so:
+
 - `admin.joshyorko.com -> 10.10.10.106` on your LAN resolver.
 
 Because cert issuance is DNS-01, you do not need to expose ports `80/443` publicly for Let's Encrypt.

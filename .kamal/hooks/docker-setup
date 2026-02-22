@@ -31,6 +31,10 @@ for host in "${HOST_ARRAY[@]}"; do
   host="$(echo "$host" | xargs)"
   [[ -z "$host" ]] && continue
 
+  echo "docker-setup: ensuring ${SSH_USER} is in the docker group on ${host}"
+  ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new "${SSH_USER}@${host}" \
+    "sudo usermod -aG docker ${SSH_USER}"
+
   echo "docker-setup: installing certbot tooling on ${SSH_USER}@${host}"
   ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new "${SSH_USER}@${host}" \
     "sudo apt-get update && sudo apt-get install -y certbot python3-certbot-dns-cloudflare && mkdir -p ~/.secrets/certbot ~/.config/letsencrypt ~/.local/share/letsencrypt/work ~/.local/share/letsencrypt/logs && chmod 700 ~/.secrets/certbot"
