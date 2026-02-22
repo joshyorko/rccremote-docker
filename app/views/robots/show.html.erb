@@ -1,0 +1,52 @@
+<% content_for :title, "Robot #{@robot.name} | Rails RCC Remote" %>
+
+<section class="panel">
+  <div class="panel-header">
+    <h1 class="panel-title">&gt; ROBOT: <%= @robot.name %></h1>
+    <%= link_to "Back", robots_path, class: "button" %>
+  </div>
+
+  <div class="path-grid">
+    <div>
+      <div class="path-label">PATH</div>
+      <code><%= @robot.path %></code>
+    </div>
+    <div>
+      <div class="path-label">FILES</div>
+      <code><%= @robot.all_files.length %></code>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2 class="panel-title">&gt; UPLOAD FILES</h2>
+  <%= form_with url: upload_robot_path(@robot.name), method: :post, multipart: true, class: "form-row" do %>
+    <%= file_field_tag "files[]", multiple: true, class: "input" %>
+    <%= submit_tag "Upload", class: "button button-primary" %>
+  <% end %>
+</section>
+
+<section class="panel">
+  <h2 class="panel-title">&gt; CORE FILE CONTENT</h2>
+  <% if @robot.files.empty? %>
+    <p class="empty">No robot core files found.</p>
+  <% else %>
+    <% @robot.files.each do |filename, content| %>
+      <h3 class="subheading"><%= filename %></h3>
+      <pre class="terminal"><%= content %></pre>
+    <% end %>
+  <% end %>
+</section>
+
+<section class="panel">
+  <h2 class="panel-title">&gt; ALL FILES</h2>
+  <% if @robot.all_files.empty? %>
+    <p class="empty">No files found.</p>
+  <% else %>
+    <ul class="file-list">
+      <% @robot.all_files.each do |file_path| %>
+        <li><code><%= file_path %></code></li>
+      <% end %>
+    </ul>
+  <% end %>
+</section>

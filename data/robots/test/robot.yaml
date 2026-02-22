@@ -1,0 +1,14 @@
+# Robot configuration
+tasks:
+  Default:
+    shell: python -m robot --report NONE --outputdir output --logtitle "Task log" tasks.robot
+
+environmentConfigs:
+  - conda.yaml
+
+artifactsDir: output
+
+PATH:
+  - .
+PYTHONPATH:
+  - .

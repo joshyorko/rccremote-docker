@@ -1,0 +1,9 @@
+<article class="list-item">
+  <div class="list-item__header">
+    <div>
+      <h3 class="list-item__title"><%= zip.name %></h3>
+      <div class="list-item__meta">Size: <%= zip.size_mb %> MB | Modified: <%= zip.modified %></div>
+    </div>
+    <%= button_to "Delete", hololib_zip_path(zip.name), method: :delete, class: "button button-danger", form: { class: "inline-form" }, data: { turbo_confirm: "Delete #{zip.name}?" } %>
+  </div>
+</article>

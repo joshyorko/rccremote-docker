@@ -1,0 +1,22 @@
+<% content_for :title, "Robots | Rails RCC Remote" %>
+
+<section class="panel">
+  <div class="panel-header">
+    <h1 class="panel-title">&gt; ROBOT MANAGEMENT</h1>
+  </div>
+
+  <%= form_with url: robots_path, method: :post, class: "form-row" do %>
+    <%= text_field_tag :name, nil, class: "input", placeholder: "my-robot", required: true %>
+    <%= submit_tag "Create Robot", class: "button button-primary" %>
+  <% end %>
+</section>
+
+<section class="panel">
+  <% if @robots.empty? %>
+    <p class="empty">No robots found. Create one to get started.</p>
+  <% else %>
+    <div class="list">
+      <%= render partial: "robot", collection: @robots %>
+    </div>
+  <% end %>
+</section>

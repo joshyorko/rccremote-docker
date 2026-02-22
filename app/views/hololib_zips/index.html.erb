@@ -1,0 +1,22 @@
+<% content_for :title, "Hololib Zips | Rails RCC Remote" %>
+
+<section class="panel">
+  <div class="panel-header">
+    <h1 class="panel-title">&gt; HOLOLIB ZIP FILES</h1>
+  </div>
+
+  <%= form_with url: hololib_zips_path, method: :post, multipart: true, class: "form-row" do %>
+    <%= file_field_tag :file, class: "input", required: true, accept: ".zip" %>
+    <%= submit_tag "Upload ZIP", class: "button button-primary" %>
+  <% end %>
+</section>
+
+<section class="panel">
+  <% if @zips.empty? %>
+    <p class="empty">No ZIP files found.</p>
+  <% else %>
+    <div class="list">
+      <%= render partial: "zip", collection: @zips, as: :zip %>
+    </div>
+  <% end %>
+</section>

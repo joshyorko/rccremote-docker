@@ -1,0 +1,36 @@
+<% content_for :title, "Dashboard | Rails RCC Remote" %>
+
+<section class="panel">
+  <div class="panel-header">
+    <h1 class="panel-title">&gt; SYSTEM STATUS</h1>
+    <div class="panel-meta">Last update: <%= @status.timestamp %></div>
+  </div>
+
+  <div class="stats-grid">
+    <%= render "stat_card", label: "RCC REMOTE", value: status_label(@status.services.dig(:rccremote, :running)), state_class: @status.services.dig(:rccremote, :running) ? "ok" : "error" %>
+    <%= render "stat_card", label: "ROBOTS", value: @status.statistics.fetch(:robots, 0), state_class: "" %>
+    <%= render "stat_card", label: "CATALOGS", value: @status.statistics.fetch(:catalogs, 0), state_class: "" %>
+    <%= render "stat_card", label: "HOLOLIB ZIPS", value: @status.statistics.fetch(:hololib_zips, 0), state_class: "" %>
+    <%= render "stat_card", label: "RCC VERSION", value: @status.rcc.fetch(:version, "unknown"), state_class: "" %>
+  </div>
+</section>
+
+<section class="panel quick-links">
+  <h2 class="panel-title">&gt; QUICK ACTIONS</h2>
+  <div class="button-row">
+    <%= link_to "Manage Robots", robots_path, class: "button button-primary" %>
+    <%= link_to "View Catalogs", catalogs_path, class: "button" %>
+    <%= link_to "Manage Hololib Zips", hololib_zips_path, class: "button" %>
+  </div>
+
+  <div class="path-grid">
+    <div>
+      <div class="path-label">ROBOTS PATH</div>
+      <code><%= @status.paths.fetch(:robots, "n/a") %></code>
+    </div>
+    <div>
+      <div class="path-label">HOLOLIB ZIP PATH</div>
+      <code><%= @status.paths.fetch(:hololib_zip, "n/a") %></code>
+    </div>
+  </div>
+</section>

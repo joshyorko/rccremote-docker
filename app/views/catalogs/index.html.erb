@@ -1,0 +1,43 @@
+<% content_for :title, "Catalogs | Rails RCC Remote" %>
+
+<section class="panel">
+  <div class="panel-header">
+    <h1 class="panel-title">&gt; HOLOTREE CATALOGS</h1>
+    <%= button_to "Rebuild Catalogs", rebuild_catalogs_path, method: :post, class: "button button-primary", form: { class: "inline-form" }, data: { turbo_confirm: "Rebuild catalogs from current robot definitions?" } %>
+  </div>
+
+  <% if @catalog_error.present? %>
+    <p class="empty error-text"><%= @catalog_error %></p>
+  <% end %>
+
+  <p class="panel-meta">Catalog count: <%= @catalogs.length %></p>
+</section>
+
+<section class="panel">
+  <h2 class="panel-title">&gt; ENVIRONMENT OVERVIEW</h2>
+
+  <% if @catalogs.empty? %>
+    <p class="empty">No catalogs found. Create robots or upload ZIP files first.</p>
+  <% else %>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Catalog ID</th>
+            <th>Robot</th>
+            <th>Status</th>
+            <th>Components</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%= render partial: "catalog_row", collection: @catalogs, as: :catalog %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</section>
+
+<section class="panel">
+  <h2 class="panel-title">&gt; RAW RCC OUTPUT</h2>
+  <pre class="terminal"><%= @raw_output.presence || "No output available." %></pre>
+</section>

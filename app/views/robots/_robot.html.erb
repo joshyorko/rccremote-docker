@@ -1,0 +1,24 @@
+<article class="list-item <%= robot.valid_robot? ? "ok" : "warning" %>">
+  <div class="list-item__header">
+    <div>
+      <h3 class="list-item__title"><%= robot.name %></h3>
+      <div class="list-item__meta"><code><%= robot.path %></code></div>
+    </div>
+    <div class="button-row">
+      <%= link_to "View", robot_path(robot.name), class: "button" %>
+      <%= button_to "Delete", robot_path(robot.name), method: :delete, class: "button button-danger", form: { class: "inline-form" }, data: { turbo_confirm: "Delete robot #{robot.name}?" } %>
+    </div>
+  </div>
+
+  <div class="chip-row">
+    <span class="chip <%= robot.has_robot_yaml ? "ok" : "warning" %>">robot.yaml <%= robot.has_robot_yaml ? "✓" : "✗" %></span>
+    <span class="chip <%= robot.has_conda_yaml ? "ok" : "warning" %>">conda.yaml <%= robot.has_conda_yaml ? "✓" : "✗" %></span>
+    <% if robot.has_env_file %>
+      <span class="chip ok">.env ✓</span>
+    <% end %>
+    <% if robot.robocorp_home.present? %>
+      <span class="chip">ROBOCORP_HOME=<%= robot.robocorp_home %></span>
+    <% end %>
+    <span class="chip"><%= robot.dependencies_count %> dependencies</span>
+  </div>
+</article>

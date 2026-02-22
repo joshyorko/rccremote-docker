@@ -1,0 +1,12 @@
+<tr>
+  <td><code><%= catalog.catalog_id %>...</code></td>
+  <td><%= catalog.robot_name %></td>
+  <td><span class="chip ok">ACTIVE</span></td>
+  <td>
+    <ul class="component-list">
+      <% catalog.components.each do |component| %>
+        <li><%= component %></li>
+      <% end %>
+    </ul>
+  </td>
+</tr>
