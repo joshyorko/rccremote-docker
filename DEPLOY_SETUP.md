@@ -7,6 +7,30 @@ Server target:
 - User: `kdlocpanda`
 - Domain: `admin.joshyorko.com`
 
+## 0) Local Host Prep (before creating/recreating DevPod)
+
+Make sure your SSH key can reach the homelab server from your local machine:
+
+```bash
+ssh kdlocpanda@10.10.10.106 "echo host-ssh-ok"
+```
+
+Recommended SSH config on your local machine:
+
+```sshconfig
+Host homelab-rcc
+  HostName 10.10.10.106
+  User kdlocpanda
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+```
+
+Then verify:
+
+```bash
+ssh homelab-rcc "echo host-ssh-config-ok"
+```
+
 ## 1) DevPod Bootstrap (every new DevPod)
 
 Make sure your SSH key is available in the DevPod and can reach the server:
@@ -22,12 +46,30 @@ eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
 ```
 
+If your DevPod does not include your host key automatically, copy/mount your SSH private key into the DevPod before deploying.
+
+Hook behavior in this repo:
+- `.kamal/hooks/pre-connect` verifies SSH connectivity to all target hosts before commands run.
+- `.kamal/hooks/docker-setup` installs `certbot` + Cloudflare DNS plugin during `kamal server bootstrap`.
+
 ## 2) One-time Server Bootstrap
 
-Install Docker + certbot DNS plugin on the server:
+Use Kamal to install/provision Docker on the target server.
+This also runs `.kamal/hooks/docker-setup` in this repo:
 
 ```bash
-ssh kdlocpanda@10.10.10.106 "sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io certbot python3-certbot-dns-cloudflare"
+bin/kamal server bootstrap
+```
+
+Optional cloud-init excerpt (if reprovisioning server):
+
+```yaml
+users:
+  - name: kdlocpanda
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - ssh-ed25519 REPLACE_WITH_YOUR_PUBLIC_KEY
 ```
 
 ## 3) Add Cloudflare API Token (on server, not in repo)
@@ -64,6 +106,7 @@ The Kamal secrets in this repo already read certs from:
 ## 5) Deploy from DevPod
 
 ```bash
+bin/kamal server bootstrap
 bin/kamal setup
 bin/kamal deploy
 ```
