@@ -1,10 +1,22 @@
 <!DOCTYPE html>
-<html>
+<html data-controller="theme">
   <head>
     <title><%= content_for(:title) || "Rails RCC Remote" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <script>
+      (() => {
+        try {
+          const saved = window.localStorage.getItem("rr-theme")
+          const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+          const theme = saved === "dark" || saved === "light" ? saved : systemTheme
+          document.documentElement.dataset.theme = theme
+        } catch (_error) {
+          document.documentElement.dataset.theme = "light"
+        }
+      })()
+    </script>
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
@@ -32,6 +44,16 @@
           <%= nav_link_to "Robots", robots_path %>
           <%= nav_link_to "Catalogs", catalogs_path %>
           <%= nav_link_to "Hololib ZIPs", hololib_zips_path %>
+          <button
+            type="button"
+            class="nav-link nav-link--theme"
+            data-theme-target="toggle"
+            data-action="theme#toggle"
+            aria-label="Toggle color mode"
+            aria-pressed="false"
+          >
+            Dark mode
+          </button>
         </nav>
 
         <div class="top-bar__lane top-bar__lane--right">
