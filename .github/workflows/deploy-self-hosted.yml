@@ -137,8 +137,8 @@ jobs:
             --pull never \
             --entrypoint /bin/sh \
             -v "$PWD:/workspace" \
-            -v "$HOME/.ssh:/root/.ssh:ro" \
-            -v "$HOME/.docker:/root/.docker:ro" \
+            -v "$HOME/.ssh:/mounted-ssh:ro" \
+            -v "$HOME/.docker:/mounted-docker:ro" \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -w /workspace \
             -e TARGET \
@@ -147,6 +147,12 @@ jobs:
             -e KAMAL_REGISTRY_PASSWORD \
             "$KAMAL_IMAGE" -lc '
               set -euo pipefail
+              export HOME=/tmp/kamal-home
+              mkdir -p "$HOME/.ssh" "$HOME/.docker"
+              cp -R /mounted-ssh/. "$HOME/.ssh/"
+              cp -R /mounted-docker/. "$HOME/.docker/" || true
+              chmod 700 "$HOME/.ssh"
+              find "$HOME/.ssh" -type f -exec chmod 600 {} \;
 
               case "$TARGET" in
                 admin) CONFIG_FILE="config/deploy.yml" ;;

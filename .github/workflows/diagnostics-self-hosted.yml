@@ -107,7 +107,7 @@ jobs:
             --pull never \
             --entrypoint /bin/sh \
             -v "$PWD:/workspace" \
-            -v "$HOME/.ssh:/root/.ssh:ro" \
+            -v "$HOME/.ssh:/mounted-ssh:ro" \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -w /workspace \
             -e TARGET \
@@ -115,6 +115,11 @@ jobs:
             -e LINES \
             "$KAMAL_IMAGE" -lc '
               set -euo pipefail
+              export HOME=/tmp/kamal-home
+              mkdir -p "$HOME/.ssh"
+              cp -R /mounted-ssh/. "$HOME/.ssh/"
+              chmod 700 "$HOME/.ssh"
+              find "$HOME/.ssh" -type f -exec chmod 600 {} \;
 
               case "$TARGET" in
                 admin) CONFIG_FILE="config/deploy.yml" ;;
