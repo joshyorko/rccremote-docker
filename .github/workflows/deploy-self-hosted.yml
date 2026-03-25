@@ -19,6 +19,10 @@ on:
         options:
           - deploy
           - setup
+      version:
+        description: Existing image tag to deploy; defaults to sha-<current commit>
+        required: false
+        type: string
 
 concurrency:
   group: deploy-rcc-${{ github.ref }}
@@ -83,21 +87,22 @@ jobs:
       - name: Log in to GHCR
         shell: bash
         env:
-          KAMAL_REGISTRY_PASSWORD: ${{ secrets.KAMAL_REGISTRY_PASSWORD }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           export DOCKER_CONFIG="$RUNNER_TEMP/docker-ghcr"
           mkdir -p "$DOCKER_CONFIG"
-          printf '%s' "$KAMAL_REGISTRY_PASSWORD" | docker login ghcr.io -u joshyorko --password-stdin
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u joshyorko --password-stdin
 
       - name: Wait for published image tag
         shell: bash
         env:
           TARGET: ${{ github.event.inputs.target || 'admin' }}
+          VERSION_INPUT: ${{ github.event.inputs.version || '' }}
         run: |
           set -euo pipefail
 
-          version="sha-${GITHUB_SHA::7}"
+          version="${VERSION_INPUT:-sha-${GITHUB_SHA::7}}"
           case "$TARGET" in
             admin) image_ref="ghcr.io/joshyorko/rccremote-docker-admin:${version}" ;;
             rccremote) image_ref="ghcr.io/joshyorko/rccremote-docker-rccremote:${version}" ;;
@@ -131,9 +136,11 @@ jobs:
         env:
           TARGET: ${{ github.event.inputs.target || 'admin' }}
           ACTION: ${{ github.event.inputs.action || 'deploy' }}
-          KAMAL_REGISTRY_PASSWORD: ${{ secrets.KAMAL_REGISTRY_PASSWORD }}
+          VERSION_INPUT: ${{ github.event.inputs.version || '' }}
+          KAMAL_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          version="${VERSION_INPUT:-sha-${GITHUB_SHA::7}}"
 
           docker run --rm \
             --pull never \
@@ -145,7 +152,7 @@ jobs:
             -w /workspace \
             -e TARGET \
             -e ACTION \
-            -e VERSION="sha-${GITHUB_SHA::7}" \
+            -e VERSION="$version" \
             -e KAMAL_REGISTRY_PASSWORD \
             "$KAMAL_IMAGE" -lc '
               set -euo pipefail
