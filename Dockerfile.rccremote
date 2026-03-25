@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # check=error=true
 
-ARG RCC_VERSION=v18.17.2
+ARG RCC_VERSION=v18.17.3
 
 FROM ubuntu:22.04 AS downloader
 ARG RCC_VERSION
