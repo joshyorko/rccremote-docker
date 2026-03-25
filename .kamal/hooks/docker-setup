@@ -3,15 +3,40 @@ set -eu
 
 resolve_ssh_user() {
   ruby <<'RUBY'
+require "erb"
 require "yaml"
+require "dotenv"
 
 destination = ENV["KAMAL_DESTINATION"].to_s
 config_path = destination.empty? ? "config/deploy.yml" : "config/deploy.#{destination}.yml"
 
 if File.exist?(config_path)
-  config = YAML.load_file(config_path) || {}
+  Dotenv.load(".env.kamal.local") if File.exist?(".env.kamal.local")
+  rendered = ERB.new(File.read(config_path)).result
+  config = YAML.safe_load(rendered, aliases: true) || {}
   user = config.dig("ssh", "user").to_s
   puts user unless user.empty?
+end
+RUBY
+}
+
+resolve_volume_paths() {
+  ruby <<'RUBY'
+require "erb"
+require "yaml"
+require "dotenv"
+
+destination = ENV["KAMAL_DESTINATION"].to_s
+config_path = destination.empty? ? "config/deploy.yml" : "config/deploy.#{destination}.yml"
+
+if File.exist?(config_path)
+  Dotenv.load(".env.kamal.local") if File.exist?(".env.kamal.local")
+  rendered = ERB.new(File.read(config_path)).result
+  config = YAML.safe_load(rendered, aliases: true) || {}
+  Array(config["volumes"]).each do |volume|
+    host_path = volume.to_s.split(":", 2).first.to_s
+    puts host_path unless host_path.empty?
+  end
 end
 RUBY
 }
@@ -28,6 +53,7 @@ run_ssh() {
 SSH_USER="${KAMAL_SSH_USER:-$(resolve_ssh_user)}"
 SSH_USER="${SSH_USER:-${USER:-}}"
 HOSTS="${KAMAL_HOSTS:-}"
+VOLUME_PATHS="$(resolve_volume_paths)"
 
 if [ -z "$HOSTS" ]; then
   echo "docker-setup: no hosts provided"
@@ -47,7 +73,14 @@ for host in "$@"; do
   run_ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new "${SSH_USER}@${host}" \
     "sudo usermod -aG docker ${SSH_USER}"
 
-  echo "docker-setup: creating server dirs on ${SSH_USER}@${host}"
-  run_ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new "${SSH_USER}@${host}" \
-    "mkdir -p ~/rccremote-data/storage ~/rccremote-data/robots ~/rccremote-data/hololib_zip ~/rccremote-data/hololib_internal ~/rccremote-data/robocorp"
+  if [ -n "$VOLUME_PATHS" ]; then
+    echo "docker-setup: creating server dirs on ${SSH_USER}@${host}"
+    while IFS= read -r volume_path; do
+      [ -z "$volume_path" ] && continue
+      run_ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new "${SSH_USER}@${host}" \
+        "mkdir -p '$volume_path'"
+    done <<EOF
+$VOLUME_PATHS
+EOF
+  fi
 done

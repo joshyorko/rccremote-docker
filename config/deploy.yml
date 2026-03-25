@@ -1,3 +1,16 @@
+<%
+require "dotenv"
+
+Dotenv.load(".env.kamal.local") if File.exist?(".env.kamal.local")
+
+kamal_server_alias = ENV.fetch("KAMAL_SERVER_ALIAS")
+kamal_admin_host = ENV.fetch("KAMAL_ADMIN_HOST")
+kamal_rccremote_host = ENV.fetch("KAMAL_RCCREMOTE_HOST")
+kamal_ssh_user = ENV.fetch("KAMAL_SSH_USER")
+rccremote_data_root = ENV.fetch("RCCREMOTE_DATA_ROOT")
+s3_endpoint = ENV.fetch("S3_ENDPOINT")
+s3_bucket = ENV.fetch("S3_BUCKET")
+%>
 # Name of your application. Used to uniquely configure containers.
 service: rccremote_docker
 
@@ -7,14 +20,14 @@ image: joshyorko/rccremote-docker-admin
 # Deploy to these servers.
 servers:
   web:
-    - homelab-rcc
+    - <%= kamal_server_alias %>
   # job:
   #   hosts:
   #     - 192.168.0.1
   #   cmd: bin/jobs
 
 proxy:
-  host: admin.joshyorko.com
+  host: <%= kamal_admin_host %>
   app_port: 80
   ssl_redirect: true
   forward_headers: true
@@ -48,12 +61,12 @@ env:
     ROBOCORP_HOME: /opt/robocorp
     ROBOTS_PATH: /robots
     HOLOLIB_ZIP_PATH: /hololib_zip
-    RCC_REMOTE_ORIGIN: https://rccremote.joshyorko.com
+    RCC_REMOTE_ORIGIN: https://<%= kamal_rccremote_host %>
     RAILS_FORCE_SSL: true
-    S3_ENDPOINT: http://10.10.40.56:9000
+    S3_ENDPOINT: <%= s3_endpoint %>
     S3_REGION: us-east-1
     S3_FORCE_PATH_STYLE: true
-    S3_BUCKET: rccremote-docker-production
+    S3_BUCKET: <%= s3_bucket %>
     AWS_REGION: us-east-1
 
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
@@ -84,10 +97,10 @@ aliases:
 # Use a persistent storage volume for sqlite database files and local Active Storage files.
 # Recommended to change this to a mounted volume path that is backed up off server.
 volumes:
-  - "/home/kdlocpanda/rccremote-data/robots:/robots"
-  - "/home/kdlocpanda/rccremote-data/hololib_zip:/hololib_zip"
-  - "/home/kdlocpanda/rccremote-data/robocorp:/opt/robocorp"
-  - "/home/kdlocpanda/rccremote-data/storage:/rails/storage"
+  - "<%= rccremote_data_root %>/robots:/robots"
+  - "<%= rccremote_data_root %>/hololib_zip:/hololib_zip"
+  - "<%= rccremote_data_root %>/robocorp:/opt/robocorp"
+  - "<%= rccremote_data_root %>/storage:/rails/storage"
 
 # Bridge fingerprinted assets, like JS and CSS, between versions to avoid
 # hitting 404 on in-flight requests. Combines all files from new and old
@@ -110,12 +123,12 @@ builder:
 
 # Use a different ssh user than root
 ssh:
-  user: kdlocpanda
+  user: <%= kamal_ssh_user %>
 
 accessories:
   cloudflared:
     image: cloudflare/cloudflared:latest
-    host: homelab-rcc
+    host: <%= kamal_server_alias %>
     cmd: tunnel --no-autoupdate run
     env:
       secret:
