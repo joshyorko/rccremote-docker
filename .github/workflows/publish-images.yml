@@ -27,12 +27,6 @@ jobs:
             runner: ubuntu-latest
             platform: linux/amd64
             arch: amd64
-          - target: admin
-            image: ghcr.io/joshyorko/rccremote-docker-admin
-            dockerfile: Dockerfile
-            runner: ubuntu-24.04-arm
-            platform: linux/arm64
-            arch: arm64
           - target: rccremote
             image: ghcr.io/joshyorko/rccremote-docker-rccremote
             dockerfile: Dockerfile.rccremote
@@ -90,7 +84,7 @@ jobs:
           push-to-registry: false
 
   manifest:
-    name: Create multi-arch manifest for ${{ matrix.target }}
+    name: Create release tag for ${{ matrix.target }}
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -116,22 +110,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create multi-arch manifest
+      - name: Create release tag
         shell: bash
         run: |
           set -euo pipefail
           short_sha="sha-${GITHUB_SHA::7}"
-
-          case "${{ matrix.target }}" in
-            admin)
-              docker buildx imagetools create \
-                --tag "${{ matrix.image }}:${short_sha}" \
-                "${{ matrix.image }}:${short_sha}-amd64" \
-                "${{ matrix.image }}:${short_sha}-arm64"
-              ;;
-            rccremote)
-              docker buildx imagetools create \
-                --tag "${{ matrix.image }}:${short_sha}" \
-                "${{ matrix.image }}:${short_sha}-amd64"
-              ;;
-          esac
+          docker buildx imagetools create \
+            --tag "${{ matrix.image }}:${short_sha}" \
+            "${{ matrix.image }}:${short_sha}-amd64"
