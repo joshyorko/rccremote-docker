@@ -44,12 +44,33 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-    env:
-      KAMAL_IMAGE: ghcr.io/basecamp/kamal:v2.10.1
 
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Ruby on runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner_home="$(getent passwd "$(id -un)" | cut -d: -f6)"
+          export RBENV_ROOT="${RBENV_ROOT:-$runner_home/.rbenv}"
+          export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
+          eval "$(rbenv init - bash)"
+          ruby -v
+          gem install bundler -v 2.6.9 --no-document
+          bundle -v
+
+      - name: Install bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner_home="$(getent passwd "$(id -un)" | cut -d: -f6)"
+          export RBENV_ROOT="${RBENV_ROOT:-$runner_home/.rbenv}"
+          export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
+          eval "$(rbenv init - bash)"
+          bundle config set path vendor/bundle
+          bundle install --jobs 4 --retry 3
 
       - name: Write deploy secrets to local files
         shell: bash
@@ -64,7 +85,8 @@ jobs:
           set -euo pipefail
 
           mkdir -p config
-          fallback_file="$HOME/.config/rccremote-docker/tunnels.env"
+          runner_home="$(getent passwd "$(id -un)" | cut -d: -f6)"
+          fallback_file="$runner_home/.config/rccremote-docker/tunnels.env"
           if [ -f "$fallback_file" ]; then
             # shellcheck disable=SC1090
             . "$fallback_file"
@@ -93,13 +115,19 @@ jobs:
           set -euo pipefail
           ssh -o BatchMode=yes homelab-rcc "echo runner-ssh-ok >/dev/null"
 
-      - name: Pull official Kamal image
+      - name: Prepare runner SSH state
         shell: bash
         run: |
           set -euo pipefail
-          docker pull "$KAMAL_IMAGE"
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          touch "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+          ssh-keygen -R 10.10.10.106 -f "$HOME/.ssh/known_hosts" >/dev/null 2>&1 || true
+          ssh-keyscan 10.10.10.106 >> "$HOME/.ssh/known_hosts" 2>/dev/null
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - name: Run Kamal diagnostics
+      - name: Run Kamal diagnostics on runner
         shell: bash
         env:
           TARGET: ${{ github.event.inputs.target || 'admin' }}
@@ -107,77 +135,60 @@ jobs:
           LINES: ${{ github.event.inputs.lines || '200' }}
         run: |
           set -euo pipefail
+          runner_home="$(getent passwd "$(id -un)" | cut -d: -f6)"
+          export RBENV_ROOT="${RBENV_ROOT:-$runner_home/.rbenv}"
+          export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
+          eval "$(rbenv init - bash)"
 
-          docker run --rm \
-            --pull never \
-            --entrypoint /bin/sh \
-            -v "$PWD:/workspace" \
-            -v "$HOME/.ssh:/mounted-ssh:ro" \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -w /workspace \
-            -e TARGET \
-            -e COMMAND \
-            -e LINES \
-            "$KAMAL_IMAGE" -lc '
-              set -euo pipefail
-              mkdir -p /root/.ssh
-              cp -R /mounted-ssh/. /root/.ssh/
-              chmod 700 /root/.ssh
-              find /root/.ssh -type f -exec chmod 600 {} \;
-              ssh-keygen -R 10.10.10.106 -f /root/.ssh/known_hosts >/dev/null 2>&1 || true
-              ssh-keyscan 10.10.10.106 >> /root/.ssh/known_hosts 2>/dev/null
-              git config --global --add safe.directory /workspace
+          case "$TARGET" in
+            admin) CONFIG_FILE="config/deploy.yml" ;;
+            rccremote) CONFIG_FILE="config/deploy.rccremote.yml" ;;
+            *)
+              echo "Unsupported target: $TARGET" >&2
+              exit 64
+              ;;
+          esac
 
-              case "$TARGET" in
-                admin) CONFIG_FILE="config/deploy.yml" ;;
-                rccremote) CONFIG_FILE="config/deploy.rccremote.yml" ;;
-                *)
-                  echo "Unsupported target: $TARGET" >&2
-                  exit 64
-                  ;;
-              esac
+          kamal_cmd() {
+            bundle exec kamal "$@" -c "$CONFIG_FILE"
+          }
 
-              kamal_cmd() {
-                /kamal/bin/kamal "$@" -c "$CONFIG_FILE"
-              }
+          fail=0
+          run_check() {
+            echo
+            echo "==> $*"
+            if ! "$@"; then
+              fail=1
+            fi
+          }
 
-              fail=0
-              run_check() {
-                echo
-                echo "==> $*"
-                if ! "$@"; then
-                  fail=1
-                fi
-              }
+          case "$COMMAND" in
+            summary)
+              run_check bundle exec kamal version
+              run_check kamal_cmd details
+              run_check kamal_cmd app version
+              run_check kamal_cmd app containers
+              run_check kamal_cmd proxy details
+              ;;
+            app_logs)
+              run_check kamal_cmd app logs --primary --lines "$LINES"
+              ;;
+            proxy_logs)
+              run_check kamal_cmd proxy logs --primary --lines "$LINES"
+              ;;
+            app_details)
+              run_check kamal_cmd app details
+              ;;
+            proxy_details)
+              run_check kamal_cmd proxy details
+              ;;
+            audit)
+              run_check kamal_cmd audit
+              ;;
+            *)
+              echo "Unsupported diagnostics command: $COMMAND" >&2
+              exit 64
+              ;;
+          esac
 
-              case "$COMMAND" in
-                summary)
-                  run_check /kamal/bin/kamal version
-                  run_check kamal_cmd details
-                  run_check kamal_cmd app version
-                  run_check kamal_cmd app containers
-                  run_check kamal_cmd proxy details
-                  ;;
-                app_logs)
-                  run_check kamal_cmd app logs --primary --lines "$LINES"
-                  ;;
-                proxy_logs)
-                  run_check kamal_cmd proxy logs --primary --lines "$LINES"
-                  ;;
-                app_details)
-                  run_check kamal_cmd app details
-                  ;;
-                proxy_details)
-                  run_check kamal_cmd proxy details
-                  ;;
-                audit)
-                  run_check kamal_cmd audit
-                  ;;
-                *)
-                  echo "Unsupported diagnostics command: $COMMAND" >&2
-                  exit 64
-                  ;;
-              esac
-
-              exit "$fail"
-            '
+          exit "$fail"
