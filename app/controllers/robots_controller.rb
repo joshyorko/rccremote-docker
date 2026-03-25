@@ -1,21 +1,13 @@
 class RobotsController < ApplicationController
-  before_action :set_robot, only: %i[show edit_files update_files]
+  before_action :set_robot, :ensure_robot_exists, only: %i[show edit_files update_files]
 
   def index
     @robots = Robot.all
   end
 
-  def show
-    return if @robot
+  def show; end
 
-    redirect_to robots_path, alert: "Robot not found"
-  end
-
-  def edit_files
-    return if @robot
-
-    redirect_to robots_path, alert: "Robot not found"
-  end
+  def edit_files; end
 
   def create
     result = Robot.create_with_defaults(params[:name])
@@ -62,11 +54,6 @@ class RobotsController < ApplicationController
   end
 
   def update_files
-    unless @robot
-      redirect_to robots_path, alert: "Robot not found"
-      return
-    end
-
     result = Robot.update_core_files(
       @robot.name,
       robot_yaml: params[:robot_yaml],
@@ -89,5 +76,11 @@ class RobotsController < ApplicationController
 
   def set_robot
     @robot = Robot.find(params[:id])
+  end
+
+  def ensure_robot_exists
+    return if @robot
+
+    redirect_to robots_path, alert: "Robot not found"
   end
 end

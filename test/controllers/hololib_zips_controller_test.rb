@@ -3,6 +3,7 @@ require "fileutils"
 
 class HololibZipsControllerTest < ActionDispatch::IntegrationTest
   setup do
+    sign_in_as(users(:one))
     @robots_path = Rails.root.join("tmp/test/robots")
     @zips_path = Rails.root.join("tmp/test/hololib_zip")
 

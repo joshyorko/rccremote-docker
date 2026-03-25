@@ -1,58 +1,76 @@
 <% content_for :title, "Catalogs | Rails RCC Remote" %>
 
-<section class="panel"
-         data-controller="catalog-rebuild"
-         data-catalog-rebuild-refresh-url-value="<%= catalogs_path %>">
-  <div class="panel-header">
-    <div>
-      <h1 class="panel-title">Holotree catalogs</h1>
-      <p class="panel-meta">Catalog count: <%= @catalogs.length %></p>
-      <p class="panel-meta">
-        Snapshot source: <%= @catalog_snapshot_source.to_s.upcase %>
-        <% if @catalog_snapshot_at.present? %>
-          | Updated <%= formatted_status_timestamp(@catalog_snapshot_at) %>
-        <% end %>
-      </p>
-    </div>
-
-    <%= form_with url: rebuild_catalogs_path,
-                  method: :post,
-                  class: "inline-form",
-                  data: {
-                    catalog_rebuild_target: "form",
-                    action: "submit->catalog-rebuild#start"
-                  } do %>
-      <%= button_tag "Rebuild catalogs",
-                     type: "submit",
-                     class: "button button-primary",
-                     data: { catalog_rebuild_target: "submit" } %>
-    <% end %>
-  </div>
-
-  <% if @catalog_error.present? %>
-    <p class="empty error-text"><%= @catalog_error %></p>
+<% rebuild_action = capture do %>
+  <%= form_with url: rebuild_catalogs_path,
+                method: :post,
+                class: "inline-form",
+                data: {
+                  catalog_rebuild_target: "form",
+                  action: "submit->catalog-rebuild#start"
+                } do %>
+    <%= button_tag "Rebuild catalogs",
+                   type: "submit",
+                   class: "button button-primary",
+                   data: { catalog_rebuild_target: "submit" } %>
   <% end %>
+<% end %>
 
-  <div class="rebuild-progress" data-catalog-rebuild-target="progress" hidden>
-    <div class="rebuild-progress__header">
-      <p class="rebuild-progress__title">Catalog rebuild progress</p>
-      <span class="rebuild-progress__percent" data-catalog-rebuild-target="percent">0%</span>
-    </div>
+<%= render "shared/page_header",
+           kicker: "Catalog workspace",
+           title: "Holotree catalogs",
+           subtitle: "Inspect the latest snapshot, then rebuild it when robot definitions change.",
+           status_text: @catalog_error.present? ? "Needs attention" : "Ready",
+           status_class: @catalog_error.present? ? "error" : "ok",
+           header_action: rebuild_action,
+           note: "Snapshot source #{@catalog_snapshot_source.to_s.upcase}#{@catalog_snapshot_at.present? ? " updated #{formatted_status_timestamp(@catalog_snapshot_at)}" : ""}",
+           section_attrs: {
+             data: {
+               controller: "catalog-rebuild",
+               "catalog-rebuild-refresh-url-value": catalogs_path
+             }
+           } %>
 
-    <div class="rebuild-progress__bar">
-      <div class="rebuild-progress__fill" data-catalog-rebuild-target="bar"></div>
-    </div>
+<% if @catalog_error.present? %>
+  <p class="empty error-text error-text--spaced"><%= @catalog_error %></p>
+<% end %>
 
-    <p class="rebuild-progress__status" data-catalog-rebuild-target="status" aria-live="polite">Ready to rebuild.</p>
-    <div class="rebuild-progress__log" data-catalog-rebuild-target="log" role="log" aria-live="polite"></div>
+<div class="rebuild-progress" data-catalog-rebuild-target="progress" hidden>
+  <div class="rebuild-progress__header">
+    <p class="rebuild-progress__title">Catalog rebuild progress</p>
+    <span class="rebuild-progress__percent" data-catalog-rebuild-target="percent">0%</span>
   </div>
+
+  <div class="rebuild-progress__bar">
+    <div class="rebuild-progress__fill" data-catalog-rebuild-target="bar"></div>
+  </div>
+
+  <p class="rebuild-progress__status" data-catalog-rebuild-target="status" aria-live="polite">Ready to rebuild.</p>
+  <div class="rebuild-progress__log" data-catalog-rebuild-target="log" role="log" aria-live="polite"></div>
+</div>
+
+<section class="stats-grid">
+  <%= render "dashboard/stat_card",
+             label: "Catalogs",
+             value: @catalogs.length,
+             hint: @catalogs.empty? ? "No snapshot loaded yet" : "Ready for inspection",
+             state_class: @catalogs.empty? ? "warning" : "ok" %>
+  <%= render "dashboard/stat_card",
+             label: "Snapshot source",
+             value: @catalog_snapshot_source.to_s.upcase,
+             hint: @catalog_snapshot_at.present? ? formatted_status_timestamp(@catalog_snapshot_at) : "No timestamp reported",
+             state_class: @catalog_snapshot_at.present? ? "ok" : "warning" %>
+  <%= render "dashboard/stat_card",
+             label: "Rebuild status",
+             value: @catalog_error.present? ? "Needs attention" : "Ready",
+             hint: @catalog_error.present? ? "Resolve the error before relying on this snapshot" : "Rebuild from this page whenever robots change",
+             state_class: @catalog_error.present? ? "error" : "ok" %>
 </section>
 
-<section class="panel">
-  <h2 class="panel-title">Latest holotree catalog snapshot</h2>
-
+<%= render "shared/page_section",
+           title: "Latest holotree catalog snapshot",
+           meta: "Wide-format view of the current catalog inventory." do %>
   <% if @catalogs.empty? %>
-    <p class="empty">No catalogs found. Create robots or upload ZIP files first.</p>
+    <%= render "shared/empty_state", message: "No catalogs found. Create robots or upload ZIP files first." %>
   <% else %>
     <div class="table-wrap">
       <table class="table catalog-snapshot-table">
@@ -77,4 +95,4 @@
       </table>
     </div>
   <% end %>
-</section>
+<% end %>

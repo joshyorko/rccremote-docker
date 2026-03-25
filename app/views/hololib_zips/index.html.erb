@@ -1,22 +1,43 @@
 <% content_for :title, "Hololib Zips | Rails RCC Remote" %>
 
-<section class="panel">
-  <div class="panel-header">
-    <h1 class="panel-title">Hololib ZIP files</h1>
-  </div>
+<%= render "shared/page_header",
+           kicker: "Bundle workspace",
+           title: "Hololib ZIP files",
+           subtitle: "Upload prebuilt bundles, import them into RCC, and remove anything stale.",
+           status_text: "#{@zips.length} ZIP archive(s)",
+           status_class: @zips.empty? ? "error" : "ok",
+           note: "Only .zip files are accepted on upload." %>
 
+<section class="stats-grid">
+  <%= render "dashboard/stat_card",
+             label: "ZIP archives",
+             value: @zips.length,
+             hint: @zips.empty? ? "No bundles uploaded yet" : "Ready to import or delete",
+             state_class: @zips.empty? ? "warning" : "ok" %>
+  <%= render "dashboard/stat_card",
+             label: "Accepted format",
+             value: ".zip",
+             hint: "Imports run automatically after upload",
+             state_class: "ok" %>
+</section>
+
+<%= render "shared/page_section",
+           title: "Upload ZIP",
+           meta: "Choose one bundle. It will be saved and imported immediately." do %>
   <%= form_with url: hololib_zips_path, method: :post, multipart: true, class: "form-row" do %>
     <%= file_field_tag :file, class: "input", required: true, accept: ".zip" %>
     <%= submit_tag "Upload ZIP", class: "button button-primary" %>
   <% end %>
-</section>
+<% end %>
 
-<section class="panel">
+<%= render "shared/page_section",
+           title: "Uploaded bundles",
+           meta: "#{@zips.length} bundle(s) currently stored for import." do %>
   <% if @zips.empty? %>
-    <p class="empty">No ZIP files found.</p>
+    <%= render "shared/empty_state", message: "No ZIP files found. Upload one to start an import." %>
   <% else %>
     <div class="list">
       <%= render partial: "zip", collection: @zips, as: :zip %>
     </div>
   <% end %>
-</section>
+<% end %>

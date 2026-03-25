@@ -1,48 +1,122 @@
 <% content_for :title, "Robot #{@robot.name} | Rails RCC Remote" %>
+<% core_files_present = [ @robot.has_robot_yaml, @robot.has_conda_yaml ].count(true) %>
 
-<section class="panel">
-  <div class="panel-header">
-    <h1 class="panel-title">Robot: <%= @robot.name %></h1>
-    <%= link_to "Back", robots_path, class: "button" %>
-  </div>
+<%= render "shared/page_header",
+           kicker: "Robot detail",
+           title: "Robot: #{@robot.name}",
+           subtitle: "Review the workspace root, core files, and inventory before making changes.",
+           status_text: @robot.valid_robot? ? "Ready" : "Needs attention",
+           status_class: @robot.valid_robot? ? "ok" : "error",
+           header_action: link_to("Back to robots", robots_path, class: "button") %>
 
+<section class="stats-grid">
+  <%= render "dashboard/stat_card",
+             label: "Workspace root",
+             value: @robot.path,
+             hint: "Resolved from the configured robots path",
+             state_class: "ok" %>
+  <%= render "dashboard/stat_card",
+             label: "Files",
+             value: @robot.all_files.length,
+             hint: "Current file inventory",
+             state_class: @robot.all_files.empty? ? "warning" : "ok" %>
+  <%= render "dashboard/stat_card",
+             label: "Dependencies",
+             value: @robot.dependencies_count,
+             hint: "Declared in the robot definition",
+             state_class: @robot.dependencies_count.positive? ? "ok" : "warning" %>
+  <%= render "dashboard/stat_card",
+             label: "Core files",
+             value: "#{core_files_present} of 2",
+             hint: "robot.yaml and conda.yaml",
+             state_class: core_files_present == 2 ? "ok" : "warning" %>
+</section>
+
+<section class="dashboard-grid dashboard-grid--main">
+  <article class="panel dashboard-actions">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Workspace actions</h2>
+        <p class="panel-meta">Upload files or jump into the core YAML editor.</p>
+      </div>
+    </div>
+
+    <%= form_with url: upload_robot_path(@robot.name), method: :post, multipart: true, class: "action-tile action-tile--primary" do %>
+      <strong>Upload files</strong>
+      <span>Add one or more files to this workspace.</span>
+      <div class="form-row form-row--spaced">
+        <%= file_field_tag "files[]", multiple: true, class: "input" %>
+        <%= submit_tag "Upload", class: "button button-primary" %>
+      </div>
+    <% end %>
+
+    <div class="action-list action-list--compact">
+      <%= link_to edit_files_robot_path(@robot.name), class: "action-tile" do %>
+        <strong>Edit core files</strong>
+        <span>Update <code>robot.yaml</code> and <code>conda.yaml</code> together.</span>
+      <% end %>
+    </div>
+  </article>
+
+  <article class="panel dashboard-telemetry">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Workspace facts</h2>
+        <p class="panel-meta">The files and paths that define how this robot runs.</p>
+      </div>
+    </div>
+
+    <div class="telemetry-grid">
+      <div class="telemetry-item">
+        <p class="telemetry-label">Path</p>
+        <p class="telemetry-value"><code><%= @robot.path %></code></p>
+      </div>
+      <div class="telemetry-item">
+        <p class="telemetry-label">robot.yaml</p>
+        <p class="telemetry-value"><%= @robot.has_robot_yaml ? "Present" : "Missing" %></p>
+      </div>
+      <div class="telemetry-item">
+        <p class="telemetry-label">conda.yaml</p>
+        <p class="telemetry-value"><%= @robot.has_conda_yaml ? "Present" : "Missing" %></p>
+      </div>
+      <div class="telemetry-item">
+        <p class="telemetry-label">.env</p>
+        <p class="telemetry-value"><%= @robot.has_env_file ? "Present" : "Not detected" %></p>
+      </div>
+      <div class="telemetry-item">
+        <p class="telemetry-label">Dependencies</p>
+        <p class="telemetry-value"><%= @robot.dependencies_count %></p>
+      </div>
+      <div class="telemetry-item">
+        <p class="telemetry-label">Validity</p>
+        <p class="telemetry-value"><%= @robot.valid_robot? ? "Ready" : "Needs attention" %></p>
+      </div>
+    </div>
+  </article>
+</section>
+
+<%= render "shared/page_section",
+           title: "Core file content",
+           meta: "Read both configuration files before editing them in place.",
+           header_action: link_to("Edit core files", edit_files_robot_path(@robot.name), class: "button button-primary") do %>
   <div class="path-grid">
-    <div>
-      <div class="path-label">PATH</div>
-      <code><%= @robot.path %></code>
-    </div>
-    <div>
-      <div class="path-label">FILES</div>
-      <code><%= @robot.all_files.length %></code>
-    </div>
+    <article>
+      <div class="path-label">robot.yaml</div>
+      <pre class="terminal"><%= @robot.files.fetch("robot.yaml", "robot.yaml not found") %></pre>
+    </article>
+
+    <article>
+      <div class="path-label">conda.yaml</div>
+      <pre class="terminal"><%= @robot.files.fetch("conda.yaml", "conda.yaml not found") %></pre>
+    </article>
   </div>
-</section>
+<% end %>
 
-<section class="panel">
-  <h2 class="panel-title">Upload files</h2>
-  <%= form_with url: upload_robot_path(@robot.name), method: :post, multipart: true, class: "form-row" do %>
-    <%= file_field_tag "files[]", multiple: true, class: "input" %>
-    <%= submit_tag "Upload", class: "button button-primary" %>
-  <% end %>
-</section>
-
-<section class="panel">
-  <div class="panel-header">
-    <h2 class="panel-title">Core file content</h2>
-    <%= link_to "Edit Core Files", edit_files_robot_path(@robot.name), class: "button button-primary" %>
-  </div>
-
-  <h3 class="subheading">robot.yaml</h3>
-  <pre class="terminal"><%= @robot.files.fetch("robot.yaml", "robot.yaml not found") %></pre>
-
-  <h3 class="subheading">conda.yaml</h3>
-  <pre class="terminal"><%= @robot.files.fetch("conda.yaml", "conda.yaml not found") %></pre>
-</section>
-
-<section class="panel">
-  <h2 class="panel-title">All files</h2>
+<%= render "shared/page_section",
+           title: "All files",
+           meta: "Everything currently stored under this robot workspace." do %>
   <% if @robot.all_files.empty? %>
-    <p class="empty">No files found.</p>
+    <%= render "shared/empty_state", message: "No files found in this workspace yet." %>
   <% else %>
     <ul class="file-list">
       <% @robot.all_files.each do |file_path| %>
@@ -50,4 +124,4 @@
       <% end %>
     </ul>
   <% end %>
-</section>
+<% end %>

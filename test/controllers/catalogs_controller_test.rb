@@ -1,6 +1,8 @@
 require "test_helper"
 
 class CatalogsControllerTest < ActionDispatch::IntegrationTest
+  setup { sign_in_as(users(:one)) }
+
   test "renders catalogs index" do
     get catalogs_url
 

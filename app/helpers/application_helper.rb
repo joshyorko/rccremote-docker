@@ -5,6 +5,10 @@ module ApplicationHelper
     link_to(label, path, class: classes.join(" "))
   end
 
+  def display_value(value, fallback: "n/a")
+    value.present? ? value : fallback
+  end
+
   def status_label(value)
     value ? "RUNNING" : "STOPPED"
   end
@@ -22,6 +26,25 @@ module ApplicationHelper
     return "1 day old" if days == 1
 
     "#{days} days old"
+  end
+
+  def day_count_label(days, fallback: "n/a")
+    days.nil? ? fallback : "#{days}d"
+  end
+
+  def catalog_status_label(catalog)
+    case catalog.status
+    when :stale then "Stale"
+    when :active then "Active"
+    else "Unknown"
+    end
+  end
+
+  def catalog_status_class(catalog)
+    case catalog.status
+    when :stale then "warning"
+    when :active then "ok"
+    end
   end
 
   def formatted_status_timestamp(timestamp)

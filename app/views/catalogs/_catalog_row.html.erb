@@ -1,12 +1,17 @@
 <tr>
-  <td><code><%= catalog.blueprint.presence || "n/a" %></code></td>
-  <td><%= catalog.platform.presence || "n/a" %></td>
-  <td><%= catalog.bytes.present? ? number_to_human_size(catalog.bytes.to_i, precision: 2, strip_insignificant_zeros: true) : "n/a" %></td>
-  <td><%= catalog.files || "n/a" %></td>
-  <td><%= catalog.directories || "n/a" %></td>
-  <td><%= catalog.relocations || "n/a" %></td>
-  <td><%= catalog.age_in_days.nil? ? "n/a" : "#{catalog.age_in_days}d" %></td>
-  <td><%= catalog.days_since_last_use.nil? ? "n/a" : "#{catalog.days_since_last_use}d" %></td>
+  <td>
+    <div class="catalog-row__headline">
+      <code><%= display_value(catalog.blueprint) %></code>
+      <span class="panel-meta panel-meta--plain">Snapshot <%= catalog_status_label(catalog) %></span>
+    </div>
+  </td>
+  <td><%= display_value(catalog.platform) %></td>
+  <td><%= catalog.bytes.present? ? human_bytes(catalog.bytes) : "n/a" %></td>
+  <td><%= display_value(catalog.files) %></td>
+  <td><%= display_value(catalog.directories) %></td>
+  <td><%= display_value(catalog.relocations) %></td>
+  <td><%= day_count_label(catalog.age_in_days) %></td>
+  <td><%= day_count_label(catalog.days_since_last_use) %></td>
   <td>
     <% if catalog.identity_key.present? %>
       <code title="<%= catalog.identity_yaml %>"><%= catalog.identity_key.first(16) %>...</code>
@@ -22,12 +27,6 @@
     <% end %>
   </td>
   <td>
-    <% if catalog.status == :unknown %>
-      <span class="chip">Unknown</span>
-    <% elsif catalog.status == :stale %>
-      <span class="chip warning">Stale</span>
-    <% else %>
-      <span class="chip ok">Active</span>
-    <% end %>
+    <span class="chip <%= catalog_status_class(catalog) %>"><%= catalog_status_label(catalog) %></span>
   </td>
 </tr>

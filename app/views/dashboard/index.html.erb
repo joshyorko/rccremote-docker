@@ -1,143 +1,109 @@
 <% content_for :title, "Dashboard | Rails RCC Remote" %>
-
-<% rcc_running = @status.services.dig(:rccremote, :running) %>
-<% rcc_available = @status.rcc.fetch(:available, false) %>
-<% rcc_mode = @status.services.dig(:rccremote, :mode).presence || "unknown" %>
-<% rcc_command = @status.services.dig(:rccremote, :command).presence || "n/a" %>
-<% rcc_origin = @status.services.dig(:rccremote, :origin).presence %>
-<% robots_count = @status.statistics.fetch(:robots, 0) %>
-<% catalogs_count = @status.statistics.fetch(:catalogs, 0) %>
-<% zips_count = @status.statistics.fetch(:hololib_zips, 0) %>
-<% holotree_spaces = @status.statistics.fetch(:holotree_spaces, 0) %>
-<% active_blueprints = @status.statistics.fetch(:active_blueprints, 0) %>
-<% rcc_version = @status.rcc.fetch(:version, "unknown") %>
-<% catalog_total_bytes = @status.rcc.fetch(:catalog_total_bytes, 0) %>
-<% newest_catalog_age_days = @status.rcc[:newest_catalog_age_days] %>
-<% most_used_space = @status.rcc[:most_used_space] || {} %>
-<% settings_profile = @status.rcc[:settings_profile].presence || "default" %>
-<% settings_version = @status.rcc[:settings_version].presence || "unknown" %>
-<% ssl_verify = @status.rcc[:ssl_verify] %>
-<% diagnostics_hosts_count = @status.rcc[:diagnostics_hosts_count].to_i %>
-<% rcc_index_url = @status.rcc[:rcc_index_url].presence %>
+<% overview = dashboard_overview(@status) %>
 
 <section class="panel dashboard-hero">
   <div class="dashboard-hero__copy">
-    <p class="dashboard-kicker">RCC Remote</p>
+    <p class="dashboard-kicker">Operations overview</p>
     <h1 class="dashboard-hero__title">System status</h1>
     <p class="dashboard-hero__subtitle">
-      Keep robots, catalogs, and environment runtime in one control room.
+      Keep robot workspaces, catalog snapshots, and bundle imports in one live control surface.
     </p>
+
+    <div class="chip-row dashboard-hero__chips">
+      <% dashboard_resource_chips(overview).each do |chip| %>
+        <span class="chip <%= chip[:state_class] %>"><%= chip[:label] %></span>
+      <% end %>
+    </div>
   </div>
 
   <div class="dashboard-hero__meta">
-    <span class="status-pill <%= rcc_running ? "ok" : "error" %>">
+    <span class="status-pill <%= overview[:rcc_running] ? "ok" : "error" %>">
       <span class="status-pill__dot" aria-hidden="true"></span>
-      RCC <%= rcc_running ? "online" : "offline" %>
+      RCC <%= overview[:rcc_running] ? "online" : "offline" %>
     </span>
-    <p class="dashboard-updated">Updated <%= formatted_status_timestamp(@status.timestamp) %></p>
+    <p class="dashboard-updated">Snapshot updated <%= overview[:timestamp] %></p>
   </div>
 </section>
 
 <section class="dashboard-grid dashboard-grid--metrics">
-  <%= render "stat_card", label: "RCC remote", value: status_label(rcc_running), hint: "Execution mode: #{rcc_mode}", state_class: rcc_running ? "ok" : "error" %>
-  <%= render "stat_card", label: "Robots", value: robots_count, hint: robots_count.zero? ? "No robots yet" : "Ready for catalog builds", state_class: robots_count.zero? ? "warning" : "ok" %>
-  <%= render "stat_card", label: "Catalogs", value: catalogs_count, hint: age_in_days_label(newest_catalog_age_days), state_class: catalogs_count.zero? ? "warning" : "ok" %>
-  <%= render "stat_card", label: "Holotree spaces", value: holotree_spaces, hint: "#{active_blueprints} active blueprint(s)", state_class: holotree_spaces.zero? ? "warning" : "ok" %>
-  <%= render "stat_card", label: "Catalog footprint", value: human_bytes(catalog_total_bytes), hint: zips_count.zero? ? "No ZIP archives uploaded" : "#{zips_count} ZIP archive(s) available", state_class: catalog_total_bytes.to_i.positive? ? "ok" : "warning" %>
-  <%= render "stat_card", label: "RCC version", value: rcc_version, hint: rcc_available ? "Binary detected" : "Binary unavailable", state_class: rcc_available ? "ok" : "error" %>
-  <%= render "stat_card", label: "Config profile", value: settings_profile, hint: "settings #{settings_version}", state_class: "ok" %>
+  <% dashboard_metrics(overview).each do |metric| %>
+    <%= render "stat_card",
+               label: metric[:label],
+               value: metric[:value],
+               hint: metric[:hint],
+               state_class: metric[:state_class] %>
+  <% end %>
 </section>
 
 <section class="dashboard-grid dashboard-grid--main">
   <article class="panel dashboard-actions">
-    <h2 class="panel-title">Quick actions</h2>
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">Quick actions</h2>
+        <p class="panel-meta">Direct entry points for the tasks operators repeat most often.</p>
+      </div>
+    </div>
     <div class="action-list">
       <%= link_to robots_path, class: "action-tile action-tile--primary" do %>
         <strong>Manage robots</strong>
-        <span>Create robots, upload files, and edit core YAML definitions.</span>
+        <span><%= overview[:robots_count] %> robot(s) ready for upload, review, or cleanup.</span>
       <% end %>
 
       <%= link_to catalogs_path, class: "action-tile" do %>
         <strong>Rebuild catalogs</strong>
-        <span>Refresh holotree catalog state from current robot environments.</span>
+        <span><%= overview[:catalogs_count] %> catalog snapshot(s) available for inspection.</span>
       <% end %>
 
       <%= link_to hololib_zips_path, class: "action-tile" do %>
         <strong>Import ZIP archives</strong>
-        <span>Upload prebuilt environment bundles and import them into RCC.</span>
+        <span><%= overview[:zips_count] %> ZIP archive(s) staged for import or deletion.</span>
       <% end %>
     </div>
   </article>
 
   <article class="panel dashboard-telemetry">
-    <h2 class="panel-title">RCC telemetry</h2>
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">RCC telemetry</h2>
+        <p class="panel-meta">Live runtime fields pulled from the control plane.</p>
+      </div>
+    </div>
     <div class="telemetry-grid">
-      <div class="telemetry-item">
-        <p class="telemetry-label">Execution mode</p>
-        <p class="telemetry-value"><%= rcc_mode %></p>
-      </div>
-      <div class="telemetry-item">
-        <p class="telemetry-label">Most used space</p>
-        <p class="telemetry-value"><%= most_used_space[:id].presence || "n/a" %></p>
-      </div>
-      <div class="telemetry-item">
-        <p class="telemetry-label">Use count</p>
-        <p class="telemetry-value"><%= most_used_space[:use_count] || 0 %> run(s)</p>
-      </div>
-      <div class="telemetry-item">
-        <p class="telemetry-label">Last used</p>
-        <p class="telemetry-value"><%= most_used_space[:last_used].presence || "n/a" %></p>
-      </div>
-      <div class="telemetry-item">
-        <p class="telemetry-label">SSL verify</p>
-        <p class="telemetry-value"><%= ssl_verify.nil? ? "unknown" : ssl_verify ? "enabled" : "disabled" %></p>
-      </div>
-      <div class="telemetry-item">
-        <p class="telemetry-label">Diagnostics hosts</p>
-        <p class="telemetry-value"><%= diagnostics_hosts_count %></p>
-      </div>
+      <% dashboard_telemetry_rows(overview).each do |row| %>
+        <div class="telemetry-item">
+          <p class="telemetry-label"><%= row[:label] %></p>
+          <p class="telemetry-value"><%= row[:value] %></p>
+        </div>
+      <% end %>
     </div>
 
     <div class="telemetry-footnotes">
-      <p><strong>RCC command:</strong> <code><%= rcc_command %></code></p>
-      <% if rcc_origin.present? %>
-        <p><strong>RCC origin:</strong> <code><%= rcc_origin %></code></p>
+      <p><strong>RCC command:</strong> <code><%= overview[:rcc_command] %></code></p>
+      <% if overview[:rcc_origin].present? %>
+        <p><strong>RCC origin:</strong> <code><%= overview[:rcc_origin] %></code></p>
       <% end %>
-      <p><strong>Robots path:</strong> <code><%= @status.paths.fetch(:robots, "n/a") %></code></p>
-      <p><strong>Hololib ZIP path:</strong> <code><%= @status.paths.fetch(:hololib_zip, "n/a") %></code></p>
-      <% if rcc_index_url.present? %>
-        <p><strong>Release index:</strong> <code><%= rcc_index_url %></code></p>
+      <p><strong>Robots path:</strong> <code><%= overview[:robots_path] %></code></p>
+      <p><strong>Hololib ZIP path:</strong> <code><%= overview[:hololib_zip_path] %></code></p>
+      <% if overview[:rcc_index_url].present? %>
+        <p><strong>Release index:</strong> <code><%= overview[:rcc_index_url] %></code></p>
       <% end %>
     </div>
   </article>
 </section>
 
 <section class="panel dashboard-checklist">
-  <h2 class="panel-title">Operational checklist</h2>
+  <div class="panel-header">
+    <div>
+      <h2 class="panel-title">Operational checklist</h2>
+      <p class="panel-meta">Scan these before rebuilding catalogs or changing robot definitions.</p>
+    </div>
+  </div>
   <ul class="checklist">
-    <li class="<%= rcc_running ? "ok" : "error" %>">
-      <span class="checklist__dot" aria-hidden="true"></span>
-      RCC remote process is <%= rcc_running ? "reachable" : "not reachable" %>.
-    </li>
-    <li class="<%= rcc_available ? "ok" : "error" %>">
-      <span class="checklist__dot" aria-hidden="true"></span>
-      RCC binary is <%= rcc_available ? "available" : "missing" %> for command execution.
-    </li>
-    <li class="<%= robots_count.positive? ? "ok" : "warning" %>">
-      <span class="checklist__dot" aria-hidden="true"></span>
-      <%= robots_count.positive? ? "#{robots_count} robot definition(s) are present." : "No robot definitions are present yet." %>
-    </li>
-    <li class="<%= catalogs_count.positive? ? "ok" : "warning" %>">
-      <span class="checklist__dot" aria-hidden="true"></span>
-      <%= catalogs_count.positive? ? "#{catalogs_count} catalog(s) are available." : "No catalogs available. Run a rebuild." %>
-    </li>
-    <li class="<%= holotree_spaces.positive? ? "ok" : "warning" %>">
-      <span class="checklist__dot" aria-hidden="true"></span>
-      <%= holotree_spaces.positive? ? "#{holotree_spaces} holotree space(s) are available." : "No holotree spaces currently available." %>
-    </li>
-    <li class="<%= catalog_total_bytes.to_i.positive? ? "ok" : "warning" %>">
-      <span class="checklist__dot" aria-hidden="true"></span>
-      <%= catalog_total_bytes.to_i.positive? ? "Catalog footprint is #{human_bytes(catalog_total_bytes)}." : "Catalog footprint is empty." %>
-    </li>
+    <% dashboard_checklist(overview).each do |item| %>
+      <li class="<%= item[:state_class] %>">
+        <span class="checklist__dot" aria-hidden="true"></span>
+        <%= item[:message] %>
+      </li>
+    <% end %>
   </ul>
 </section>

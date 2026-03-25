@@ -3,6 +3,8 @@
   <head>
     <title><%= content_for(:title) || "Rails RCC Remote" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f3efe6">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <script>
@@ -64,9 +66,7 @@
       </header>
 
       <main class="page">
-        <% flash.each do |type, message| %>
-          <div class="flash <%= type %>"><%= message %></div>
-        <% end %>
+        <%= render "shared/flash" %>
 
         <%= yield %>
       </main>

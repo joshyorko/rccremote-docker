@@ -1,0 +1,32 @@
+<% section_attrs = local_assigns.fetch(:section_attrs, {}) %>
+
+<section class="panel dashboard-hero" <%= tag.attributes(section_attrs) if section_attrs.present? %>>
+  <div class="dashboard-hero__copy">
+    <% if local_assigns[:kicker].present? %>
+      <p class="dashboard-kicker"><%= kicker %></p>
+    <% end %>
+
+    <h1 class="dashboard-hero__title"><%= title %></h1>
+
+    <% if local_assigns[:subtitle].present? %>
+      <p class="dashboard-hero__subtitle"><%= subtitle %></p>
+    <% end %>
+  </div>
+
+  <div class="dashboard-hero__meta">
+    <% if local_assigns[:status_text].present? %>
+      <span class="status-pill <%= status_class %>">
+        <span class="status-pill__dot" aria-hidden="true"></span>
+        <%= status_text %>
+      </span>
+    <% end %>
+
+    <% if local_assigns[:header_action].present? %>
+      <%= header_action %>
+    <% end %>
+
+    <% if local_assigns[:note].present? %>
+      <p class="dashboard-updated"><%= note %></p>
+    <% end %>
+  </div>
+</section>

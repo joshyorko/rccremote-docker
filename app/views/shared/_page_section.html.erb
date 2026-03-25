@@ -1,0 +1,24 @@
+<% section_class = local_assigns.fetch(:section_class, "panel") %>
+<% section_attrs = local_assigns.fetch(:section_attrs, {}) %>
+
+<section class="<%= section_class %>" <%= tag.attributes(section_attrs) if section_attrs.present? %>>
+  <% if local_assigns[:title].present? || local_assigns[:meta].present? || local_assigns[:header_action].present? %>
+    <div class="panel-header">
+      <div>
+        <% if local_assigns[:title].present? %>
+          <h2 class="panel-title"><%= title %></h2>
+        <% end %>
+
+        <% if local_assigns[:meta].present? %>
+          <p class="panel-meta"><%= meta %></p>
+        <% end %>
+      </div>
+
+      <% if local_assigns[:header_action].present? %>
+        <%= header_action %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%= yield %>
+</section>

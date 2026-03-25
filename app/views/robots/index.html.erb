@@ -1,22 +1,48 @@
 <% content_for :title, "Robots | Rails RCC Remote" %>
 
-<section class="panel">
-  <div class="panel-header">
-    <h1 class="panel-title">Robot management</h1>
-  </div>
+<%= render "shared/page_header",
+           kicker: "Robot workspace",
+           title: "Robot management",
+           subtitle: "Create robot folders, upload files, and keep definitions aligned with the current runtime.",
+           status_text: "#{@robots.length} robot(s)",
+           status_class: @robots.empty? ? "error" : "ok",
+           note: "Each robot is a folder-backed workspace with its own YAML files." %>
 
+<section class="stats-grid">
+  <%= render "dashboard/stat_card",
+             label: "Robot folders",
+             value: @robots.length,
+             hint: @robots.empty? ? "No workspaces created yet" : "Ready for uploads and edits",
+             state_class: @robots.empty? ? "warning" : "ok" %>
+  <%= render "dashboard/stat_card",
+             label: "Valid robots",
+             value: @robots.count(&:valid_robot?),
+             hint: "Definitions with both core files in place",
+             state_class: @robots.empty? ? "warning" : (@robots.all?(&:valid_robot?) ? "ok" : "warning") %>
+  <%= render "dashboard/stat_card",
+             label: "Robot YAML",
+             value: @robots.count(&:has_robot_yaml),
+             hint: "Files ready to execute",
+             state_class: @robots.count(&:has_robot_yaml).positive? ? "ok" : "warning" %>
+</section>
+
+<%= render "shared/page_section",
+           title: "Create robot",
+           meta: "Use a short, filesystem-safe name for the new workspace." do %>
   <%= form_with url: robots_path, method: :post, class: "form-row" do %>
     <%= text_field_tag :name, nil, class: "input", placeholder: "my-robot", required: true %>
     <%= submit_tag "Create Robot", class: "button button-primary" %>
   <% end %>
-</section>
+<% end %>
 
-<section class="panel">
+<%= render "shared/page_section",
+           title: "Robot inventory",
+           meta: "#{@robots.length} robot(s) available for view, upload, or delete." do %>
   <% if @robots.empty? %>
-    <p class="empty">No robots found. Create one to get started.</p>
+    <%= render "shared/empty_state", message: "No robots found yet. Create one to start a workspace." %>
   <% else %>
     <div class="list">
       <%= render partial: "robot", collection: @robots %>
     </div>
   <% end %>
-</section>
+<% end %>
