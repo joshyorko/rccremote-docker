@@ -58,7 +58,9 @@ jobs:
           export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
           eval "$(rbenv init - bash)"
           ruby -v
-          gem install bundler -v 2.6.9 --no-document
+          if ! bundle _2.6.9_ -v >/dev/null 2>&1; then
+            gem install bundler -v 2.6.9 --no-document
+          fi
           bundle -v
 
       - name: Install bundle
@@ -70,7 +72,7 @@ jobs:
           export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
           eval "$(rbenv init - bash)"
           bundle config set path vendor/bundle
-          bundle install --jobs 4 --retry 3
+          bundle check || bundle install --jobs 4 --retry 3
 
       - name: Write deploy secrets to local files
         shell: bash
