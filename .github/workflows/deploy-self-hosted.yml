@@ -122,6 +122,19 @@ jobs:
           fi
           bundle -v
 
+      - name: Configure persistent Bundler path
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner_home="$(getent passwd "$(id -un)" | cut -d: -f6)"
+          bundle_path="$runner_home/.local/share/bundle/rccremote-docker"
+          bundle_app_config="$runner_home/.config/bundle/rccremote-docker"
+          mkdir -p "$bundle_path" "$bundle_app_config"
+          {
+            printf 'BUNDLE_PATH=%s\n' "$bundle_path"
+            printf 'BUNDLE_APP_CONFIG=%s\n' "$bundle_app_config"
+          } >> "$GITHUB_ENV"
+
       - name: Install bundle
         shell: bash
         run: |
@@ -130,7 +143,6 @@ jobs:
           export RBENV_ROOT="${RBENV_ROOT:-$runner_home/.rbenv}"
           export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
           eval "$(rbenv init - bash)"
-          bundle config set path vendor/bundle
           bundle check || bundle install --jobs 4 --retry 3
 
       - name: Write deploy secrets to local files
