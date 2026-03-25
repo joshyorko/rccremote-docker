@@ -28,8 +28,7 @@ proxy:
 
 registry:
   server: ghcr.io
-  username:
-    - joshyorko
+  username: joshyorko
   password:
     - KAMAL_REGISTRY_PASSWORD
 

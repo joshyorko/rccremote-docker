@@ -26,9 +26,7 @@ proxy:
 # Where you keep your container images.
 registry:
   server: ghcr.io
-
-  username:
-    - joshyorko
+  username: joshyorko
   password:
     - KAMAL_REGISTRY_PASSWORD
 
