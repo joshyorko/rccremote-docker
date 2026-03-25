@@ -153,6 +153,7 @@ jobs:
               cp -R /mounted-docker/. "$HOME/.docker/" || true
               chmod 700 "$HOME/.ssh"
               find "$HOME/.ssh" -type f -exec chmod 600 {} \;
+              git config --global --add safe.directory /workspace
 
               case "$TARGET" in
                 admin) CONFIG_FILE="config/deploy.yml" ;;
