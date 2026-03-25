@@ -2,16 +2,6 @@ name: Build and publish RCC images to GHCR
 
 on:
   workflow_dispatch:
-    inputs:
-      target:
-        description: Image target to publish
-        required: true
-        default: all
-        type: choice
-        options:
-          - all
-          - admin
-          - rccremote
 
 concurrency:
   group: publish-rcc-${{ github.ref }}
@@ -20,7 +10,6 @@ concurrency:
 jobs:
   build:
     name: Build and push ${{ matrix.target }} (${{ matrix.arch }})
-    if: ${{ github.event.inputs.target == 'all' || github.event.inputs.target == matrix.target }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     permissions:
@@ -109,7 +98,6 @@ jobs:
   manifest:
     name: Create multi-arch manifest for ${{ matrix.target }}
     needs: build
-    if: ${{ github.event.inputs.target == 'all' || github.event.inputs.target == matrix.target }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

@@ -71,7 +71,7 @@ The workflows expect `pi5-01` to be able to SSH to `homelab-rcc` without prompti
 
 `.github/workflows/publish-images.yml` runs only by manual dispatch.
 
-It publishes one or both GHCR images:
+It always publishes both GHCR images for the selected commit:
 
 - `ghcr.io/joshyorko/rccremote-docker-admin:sha-<short_sha>`
 - `ghcr.io/joshyorko/rccremote-docker-rccremote:sha-<short_sha>`
@@ -102,8 +102,8 @@ Diagnostics dispatch supports:
 Recommended order:
 
 1. Run `diagnostics-self-hosted.yml` for the chosen target.
-2. Run `publish-images.yml` for the chosen target.
-3. After the image exists in GHCR, run `deploy-self-hosted.yml` for that same target.
+2. Run `publish-images.yml`.
+3. After the images exist in GHCR, run `deploy-self-hosted.yml` for the target you want.
 
 Manual deploy dispatch supports:
 
