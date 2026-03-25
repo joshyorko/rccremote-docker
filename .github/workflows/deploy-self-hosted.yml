@@ -86,6 +86,8 @@ jobs:
           KAMAL_REGISTRY_PASSWORD: ${{ secrets.KAMAL_REGISTRY_PASSWORD }}
         run: |
           set -euo pipefail
+          export DOCKER_CONFIG="$RUNNER_TEMP/docker-ghcr"
+          mkdir -p "$DOCKER_CONFIG"
           printf '%s' "$KAMAL_REGISTRY_PASSWORD" | docker login ghcr.io -u joshyorko --password-stdin
 
       - name: Wait for published image tag
@@ -138,7 +140,7 @@ jobs:
             --entrypoint /bin/sh \
             -v "$PWD:/workspace" \
             -v "$HOME/.ssh:/mounted-ssh:ro" \
-            -v "$HOME/.docker:/mounted-docker:ro" \
+            -v "$RUNNER_TEMP/docker-ghcr:/mounted-docker:ro" \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -w /workspace \
             -e TARGET \
