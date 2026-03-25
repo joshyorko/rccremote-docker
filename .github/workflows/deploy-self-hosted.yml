@@ -171,12 +171,20 @@ jobs:
           ACTION: ${{ github.event.inputs.action || 'deploy' }}
           VERSION_INPUT: ${{ github.event.inputs.version || '' }}
           KAMAL_REGISTRY_PASSWORD: ${{ secrets.KAMAL_REGISTRY_PASSWORD }}
+          ADMIN_CLOUDFLARED_TOKEN: ${{ secrets.ADMIN_CLOUDFLARED_TOKEN }}
+          RCCREMOTE_CLOUDFLARED_TOKEN: ${{ secrets.RCCREMOTE_CLOUDFLARED_TOKEN }}
         run: |
           set -euo pipefail
           runner_home="$(getent passwd "$(id -un)" | cut -d: -f6)"
           export RBENV_ROOT="${RBENV_ROOT:-$runner_home/.rbenv}"
           export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
           eval "$(rbenv init - bash)"
+          fallback_file="$runner_home/.config/rccremote-docker/tunnels.env"
+          if [ -f "$fallback_file" ]; then
+            # shellcheck disable=SC1090
+            . "$fallback_file"
+          fi
+          export ADMIN_CLOUDFLARED_TOKEN RCCREMOTE_CLOUDFLARED_TOKEN
           version="${VERSION_INPUT:-sha-${GITHUB_SHA::7}}"
 
           case "$TARGET" in

@@ -133,12 +133,20 @@ jobs:
           TARGET: ${{ github.event.inputs.target || 'admin' }}
           COMMAND: ${{ github.event.inputs.command || 'summary' }}
           LINES: ${{ github.event.inputs.lines || '200' }}
+          ADMIN_CLOUDFLARED_TOKEN: ${{ secrets.ADMIN_CLOUDFLARED_TOKEN }}
+          RCCREMOTE_CLOUDFLARED_TOKEN: ${{ secrets.RCCREMOTE_CLOUDFLARED_TOKEN }}
         run: |
           set -euo pipefail
           runner_home="$(getent passwd "$(id -un)" | cut -d: -f6)"
           export RBENV_ROOT="${RBENV_ROOT:-$runner_home/.rbenv}"
           export PATH="$RBENV_ROOT/bin:$RBENV_ROOT/shims:$PATH"
           eval "$(rbenv init - bash)"
+          fallback_file="$runner_home/.config/rccremote-docker/tunnels.env"
+          if [ -f "$fallback_file" ]; then
+            # shellcheck disable=SC1090
+            . "$fallback_file"
+          fi
+          export ADMIN_CLOUDFLARED_TOKEN RCCREMOTE_CLOUDFLARED_TOKEN
 
           case "$TARGET" in
             admin) CONFIG_FILE="config/deploy.yml" ;;
