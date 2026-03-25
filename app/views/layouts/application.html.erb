@@ -41,22 +41,24 @@
           </div>
         </div>
 
-        <nav class="top-bar__nav top-bar__nav--omakase" aria-label="Primary">
-          <%= nav_link_to "Dashboard", root_path %>
-          <%= nav_link_to "Robots", robots_path %>
-          <%= nav_link_to "Catalogs", catalogs_path %>
-          <%= nav_link_to "Hololib ZIPs", hololib_zips_path %>
-          <button
-            type="button"
-            class="nav-link nav-link--theme"
-            data-theme-target="toggle"
-            data-action="theme#toggle"
-            aria-label="Toggle color mode"
-            aria-pressed="false"
-          >
-            Dark mode
-          </button>
-        </nav>
+        <% if authenticated? %>
+          <nav class="top-bar__nav top-bar__nav--omakase" aria-label="Primary">
+            <%= nav_link_to "Dashboard", root_path %>
+            <%= nav_link_to "Robots", robots_path %>
+            <%= nav_link_to "Catalogs", catalogs_path %>
+            <%= nav_link_to "Hololib ZIPs", hololib_zips_path %>
+            <button
+              type="button"
+              class="nav-link nav-link--theme"
+              data-theme-target="toggle"
+              data-action="theme#toggle"
+              aria-label="Toggle color mode"
+              aria-pressed="false"
+            >
+              Dark mode
+            </button>
+          </nav>
+        <% end %>
 
         <div class="top-bar__lane top-bar__lane--right">
           <% if authenticated? %>

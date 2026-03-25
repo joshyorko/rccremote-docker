@@ -6,6 +6,7 @@ class PasswordsControllerTest < ActionDispatch::IntegrationTest
   test "new" do
     get new_password_path
     assert_response :success
+    assert_no_app_navigation
   end
 
   test "create" do
@@ -29,6 +30,7 @@ class PasswordsControllerTest < ActionDispatch::IntegrationTest
   test "edit" do
     get edit_password_path(@user.password_reset_token)
     assert_response :success
+    assert_no_app_navigation
   end
 
   test "edit with invalid password reset token" do
@@ -61,6 +63,15 @@ class PasswordsControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
+    def assert_no_app_navigation
+      assert_select "nav[aria-label='Primary']", count: 0
+      assert_select "a", text: "Dashboard", count: 0
+      assert_select "a", text: "Robots", count: 0
+      assert_select "a", text: "Catalogs", count: 0
+      assert_select "a", text: "Hololib ZIPs", count: 0
+      assert_select "a", text: "Log out", count: 0
+    end
+
     def assert_notice(text)
       assert_select "div", /#{text}/
     end
