@@ -46,7 +46,7 @@ ssh-add ~/.ssh/id_ed25519
 Hook behavior in this repo:
 
 - `.kamal/hooks/pre-connect` verifies SSH connectivity to target hosts.
-- `.kamal/hooks/docker-setup` adds the SSH user to `docker`, installs certbot tooling, and creates data directories under `~/rccremote-data`.
+- `.kamal/hooks/docker-setup` adds the SSH user to `docker` and creates data directories under `~/rccremote-data`.
 
 ## 2) One-time Server Bootstrap
 
@@ -60,49 +60,41 @@ If Docker group permissions do not apply immediately:
 ssh kdlocpanda@10.10.10.106 "newgrp docker"
 ```
 
-## 3) Add Cloudflare API Token (on server, not in repo)
+## 3) Prepare Local Deploy Secrets
+
+Create `.env.kamal.local` in this repo with:
 
 ```bash
-ssh kdlocpanda@10.10.10.106 "mkdir -p ~/.secrets/certbot && chmod 700 ~/.secrets/certbot"
-ssh kdlocpanda@10.10.10.106 "cat > ~/.secrets/certbot/cloudflare.ini <<'EOF'
-dns_cloudflare_api_token = REPLACE_WITH_CLOUDFLARE_DNS_TOKEN
-EOF"
-ssh kdlocpanda@10.10.10.106 "chmod 600 ~/.secrets/certbot/cloudflare.ini"
+cat > .env.kamal.local <<'EOF'
+S3_ACCESS_KEY_ID=REPLACE_ME
+S3_SECRET_ACCESS_KEY=REPLACE_ME
+ADMIN_CLOUDFLARED_TOKEN=REPLACE_ME
+RCCREMOTE_CLOUDFLARED_TOKEN=REPLACE_ME
+EOF
 ```
 
-Never commit real tokens.
+`.kamal/secrets` reads these values at deploy time. Never commit raw secrets.
 
-## 4) Issue/Renew LetsEncrypt Cert (DNS-01, SAN)
+## 4) Cloudflare Tunnel Notes
 
-Run on server:
+Each deployment uses its own `cloudflared` accessory:
 
-```bash
-ssh kdlocpanda@10.10.10.106 "certbot certonly \
-  --dns-cloudflare \
-  --dns-cloudflare-credentials ~/.secrets/certbot/cloudflare.ini \
-  --config-dir ~/.config/letsencrypt \
-  --work-dir ~/.local/share/letsencrypt/work \
-  --logs-dir ~/.local/share/letsencrypt/logs \
-  --agree-tos -m joshua.yorko@gmail.com -n \
-  --cert-name admin.joshyorko.com \
-  --expand \
-  -d admin.joshyorko.com \
-  -d rccremote.joshyorko.com"
-```
+- `config/deploy.yml` -> `admin.joshyorko.com`
+- `config/deploy.rccremote.yml` -> `rccremote.joshyorko.com`
 
-The shared Kamal TLS secrets in `.kamal/secrets` read from:
+Create the tunnel tokens in Cloudflare and place them in `.env.kamal.local` as:
 
-- `/home/kdlocpanda/.config/letsencrypt/live/admin.joshyorko.com/fullchain.pem`
-- `/home/kdlocpanda/.config/letsencrypt/live/admin.joshyorko.com/privkey.pem`
+- `ADMIN_CLOUDFLARED_TOKEN`
+- `RCCREMOTE_CLOUDFLARED_TOKEN`
 
 ## 5) DNS Notes
 
-Cloudflare records should resolve to your homelab endpoint:
+Cloudflare Tunnel should front both hostnames:
 
 - `admin.joshyorko.com`
 - `rccremote.joshyorko.com`
 
-For private homelab access, use split DNS on LAN as needed.
+Kamal proxy listens only on `127.0.0.1` and `cloudflared` is the public edge.
 
 ## 6) Deploy (Admin + RCC Remote)
 
@@ -120,6 +112,12 @@ bin/kamal setup -c config/deploy.rccremote.yml
 bin/kamal deploy -c config/deploy.rccremote.yml
 ```
 
+Both deployments use:
+
+- host-path storage under `~/rccremote-data`
+- S3-compatible Active Storage at `10.10.40.56:9000`
+- Litestream replication for all production SQLite databases
+
 ## 7) RCC Client Configuration
 
 On client machines:
@@ -129,12 +127,6 @@ export RCC_REMOTE_ORIGIN=https://rccremote.joshyorko.com
 rcc holotree catalogs
 ```
 
-## 8) TLS Renewal Helper
+## 8) Notes
 
-From this repo (or on server):
-
-```bash
-script/renew_tls_cert.sh
-```
-
-Default behavior renews cert SANs for both domains (`admin` + `rccremote`).
+The previous certbot-based TLS flow is obsolete for this branch. Public TLS is handled by Cloudflare Tunnel rather than locally managed LetsEncrypt certificates.

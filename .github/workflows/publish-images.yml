@@ -1,0 +1,145 @@
+name: Build and publish RCC images to GHCR
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Image target to publish
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - admin
+          - rccremote
+
+concurrency:
+  group: publish-rcc-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and push ${{ matrix.target }} (${{ matrix.arch }})
+    if: ${{ github.event.inputs.target == 'all' || github.event.inputs.target == matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: admin
+            image: ghcr.io/joshyorko/rccremote-docker-admin
+            dockerfile: Dockerfile
+            runner: ubuntu-latest
+            platform: linux/amd64
+            arch: amd64
+          - target: admin
+            image: ghcr.io/joshyorko/rccremote-docker-admin
+            dockerfile: Dockerfile
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            arch: arm64
+          - target: rccremote
+            image: ghcr.io/joshyorko/rccremote-docker-rccremote
+            dockerfile: Dockerfile.rccremote
+            runner: ubuntu-latest
+            platform: linux/amd64
+            arch: amd64
+          - target: rccremote
+            image: ghcr.io/joshyorko/rccremote-docker-rccremote
+            dockerfile: Dockerfile.rccremote
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            arch: arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: vars
+        shell: bash
+        run: |
+          set -euo pipefail
+          short_sha="sha-${GITHUB_SHA::7}"
+          arch_tag="${short_sha}-${{ matrix.arch }}"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "arch_tag=${arch_tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push ${{ matrix.platform }}
+        id: build
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: ${{ matrix.image }}:${{ steps.vars.outputs.arch_tag }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.target }}-${{ matrix.platform }}
+          cache-to: type=gha,scope=${{ matrix.target }}-${{ matrix.platform }},mode=max
+          sbom: false
+          provenance: false
+
+      - name: Attest image provenance (per-arch)
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-name: ${{ matrix.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: false
+
+  manifest:
+    name: Create multi-arch manifest for ${{ matrix.target }}
+    needs: build
+    if: ${{ github.event.inputs.target == 'all' || github.event.inputs.target == matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: admin
+            image: ghcr.io/joshyorko/rccremote-docker-admin
+          - target: rccremote
+            image: ghcr.io/joshyorko/rccremote-docker-rccremote
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create multi-arch manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          short_sha="sha-${GITHUB_SHA::7}"
+          docker buildx imagetools create \
+            --tag "${{ matrix.image }}:${short_sha}" \
+            "${{ matrix.image }}:${short_sha}-amd64" \
+            "${{ matrix.image }}:${short_sha}-arm64"

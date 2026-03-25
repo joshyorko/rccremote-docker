@@ -2,56 +2,46 @@
 service: rccremote_docker
 
 # Name of the container image (use your-user/app-name on external registries).
-image: rccremote_docker
+image: joshyorko/rccremote-docker-admin
 
 # Deploy to these servers.
 servers:
   web:
-    - 10.10.10.106
+    - homelab-rcc
   # job:
   #   hosts:
   #     - 192.168.0.1
   #   cmd: bin/jobs
 
-# Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
-# If used with Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
-#
-# Using an SSL proxy like this requires turning on config.assume_ssl and config.force_ssl in production.rb!
-#
-# Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
-#
 proxy:
   host: admin.joshyorko.com
   app_port: 80
   ssl_redirect: true
   forward_headers: true
-  ssl:
-    # DNS-01 issued certs (for private homelab without exposing 80/443 publicly).
-    # Keep these variables in .kamal/secrets as command substitutions that read current cert files.
-    certificate_pem: KAMAL_SSL_CERTIFICATE_PEM
-    private_key_pem: KAMAL_SSL_PRIVATE_KEY_PEM
+  ssl: false
   run:
-    # Bind only on LAN address so the service is not exposed directly on other host interfaces.
     bind_ips:
-      - 10.10.10.106
+      - 127.0.0.1
 
 # Where you keep your container images.
 registry:
-  # Alternatives: hub.docker.com / registry.digitalocean.com / ghcr.io / ...
-  server: localhost:5555
+  server: ghcr.io
 
-  # Needed for authenticated registries.
-  # username: your-user
-
-  # Always use an access token rather than real password when possible.
-  # password:
-  #   - KAMAL_REGISTRY_PASSWORD
+  username:
+    - joshyorko
+  password:
+    - KAMAL_REGISTRY_PASSWORD
 
 # Inject ENV variables into containers (secrets come from .kamal/secrets).
 env:
   secret:
     - RAILS_MASTER_KEY
+    - S3_ACCESS_KEY_ID
+    - S3_SECRET_ACCESS_KEY
+    - AWS_ACCESS_KEY_ID:S3_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY:S3_SECRET_ACCESS_KEY
   clear:
+    ACTIVE_STORAGE_SERVICE: s3
     # RCC management runtime inside the Rails container.
     # The RCC daemon itself runs as a separate Kamal deployment on rccremote.joshyorko.com.
     RCC_EXECUTION_MODE: local
@@ -61,6 +51,11 @@ env:
     HOLOLIB_ZIP_PATH: /hololib_zip
     RCC_REMOTE_ORIGIN: https://rccremote.joshyorko.com
     RAILS_FORCE_SSL: true
+    S3_ENDPOINT: http://10.10.40.56:9000
+    S3_REGION: us-east-1
+    S3_FORCE_PATH_STYLE: true
+    S3_BUCKET: rccremote-docker-production
+    AWS_REGION: us-east-1
 
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
@@ -93,7 +88,7 @@ volumes:
   - "/home/kdlocpanda/rccremote-data/robots:/robots"
   - "/home/kdlocpanda/rccremote-data/hololib_zip:/hololib_zip"
   - "/home/kdlocpanda/rccremote-data/robocorp:/opt/robocorp"
-  - "rccremote_docker_storage:/rails/storage"
+  - "/home/kdlocpanda/rccremote-data/storage:/rails/storage"
 
 # Bridge fingerprinted assets, like JS and CSS, between versions to avoid
 # hitting 404 on in-flight requests. Combines all files from new and old
@@ -118,26 +113,11 @@ builder:
 ssh:
   user: kdlocpanda
 
-# Use accessory services (secrets come from .kamal/secrets).
-# accessories:
-#   db:
-#     image: mysql:8.0
-#     host: 192.168.0.2
-#     # Change to 3306 to expose port to the world instead of just local network.
-#     port: "127.0.0.1:3306:3306"
-#     env:
-#       clear:
-#         MYSQL_ROOT_HOST: '%'
-#       secret:
-#         - MYSQL_ROOT_PASSWORD
-#     files:
-#       - config/mysql/production.cnf:/etc/mysql/my.cnf
-#       - db/production.sql:/docker-entrypoint-initdb.d/setup.sql
-#     directories:
-#       - data:/var/lib/mysql
-#   redis:
-#     image: valkey/valkey:8
-#     host: 192.168.0.2
-#     port: 6379
-#     directories:
-#       - data:/data
+accessories:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    host: homelab-rcc
+    cmd: tunnel --no-autoupdate run
+    env:
+      secret:
+        - TUNNEL_TOKEN:ADMIN_CLOUDFLARED_TOKEN

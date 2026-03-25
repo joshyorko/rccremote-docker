@@ -4,21 +4,19 @@
 #   bin/kamal setup -c config/deploy.rccremote.yml
 #   bin/kamal deploy -c config/deploy.rccremote.yml
 service: rccremote_service
-image: rccremote_service
+image: joshyorko/rccremote-docker-rccremote
 
 servers:
   web:
     hosts:
-      - 10.10.10.106
+      - homelab-rcc
 
 proxy:
   host: rccremote.joshyorko.com
   app_port: 4653
   ssl_redirect: true
   forward_headers: true
-  ssl:
-    certificate_pem: KAMAL_SSL_CERTIFICATE_PEM
-    private_key_pem: KAMAL_SSL_PRIVATE_KEY_PEM
+  ssl: false
   healthcheck:
     # rccremote has no native /health endpoint; /force/* returns 200.
     path: /force/_kamal_health
@@ -26,10 +24,14 @@ proxy:
     timeout: 5
   run:
     bind_ips:
-      - 10.10.10.106
+      - 127.0.0.1
 
 registry:
-  server: localhost:5555
+  server: ghcr.io
+  username:
+    - joshyorko
+  password:
+    - KAMAL_REGISTRY_PASSWORD
 
 env:
   clear:
@@ -60,3 +62,12 @@ ssh:
 aliases:
   shell: app exec --interactive --reuse "bash"
   logs: app logs -f
+
+accessories:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    host: homelab-rcc
+    cmd: tunnel --no-autoupdate run
+    env:
+      secret:
+        - TUNNEL_TOKEN:RCCREMOTE_CLOUDFLARED_TOKEN
