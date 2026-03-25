@@ -27,6 +27,88 @@
   </head>
 
   <body>
+    <% if authenticated? %>
+      <% jump_items = [
+        {
+          title: "Overview",
+          meta: "Runtime health, blockers, and the next operator move",
+          path: root_path,
+          shortcut: "1",
+          keywords: "overview runtime health blockers dashboard home queue status"
+        },
+        {
+          title: "Workspaces",
+          meta: "Robot definitions, workspace files, and core YAMLs",
+          path: robots_path,
+          shortcut: "2",
+          keywords: "workspaces robots filesystem execution paths definitions yaml"
+        },
+        {
+          title: "Catalogs",
+          meta: "Holotree snapshots, blueprint state, and rebuild readiness",
+          path: catalogs_path,
+          shortcut: "3",
+          keywords: "catalogs holotree snapshots blueprints rebuild artifacts generated"
+        },
+        {
+          title: "Bundles",
+          meta: "Bundle intake, uploaded archives, and package staging",
+          path: hololib_zips_path,
+          shortcut: "4",
+          keywords: "bundles imports hololib zips packages uploads intake libraries"
+        }
+      ] %>
+      <% jump_action_items = [
+        {
+          title: "Create workspace",
+          meta: "Start a new RCC workspace folder and stage its core definitions",
+          path: robots_path(anchor: "create-workspace"),
+          shortcut: "5",
+          keywords: "create workspace robot folder new robot yaml conda"
+        },
+        {
+          title: "Rebuild catalogs",
+          meta: "Refresh the latest holotree snapshot after workspace changes",
+          path: catalogs_path(anchor: "rebuild-catalogs"),
+          shortcut: "6",
+          keywords: "rebuild catalogs holotree snapshot refresh blueprint"
+        },
+        {
+          title: "Upload bundle",
+          meta: "Import a new RCC bundle archive into the remote workspace",
+          path: hololib_zips_path(anchor: "upload-bundle"),
+          shortcut: "7",
+          keywords: "upload bundle import hololib zip archive intake"
+        }
+      ] %>
+      <% if controller_name == "robots" && action_name == "show" && defined?(@robot) && @robot.present? %>
+        <% jump_action_items = [
+          {
+            title: "Edit core definitions",
+            meta: "Update robot.yaml and conda.yaml for #{@robot.name}",
+            path: edit_files_robot_path(@robot.name),
+            shortcut: "5",
+            keywords: "edit core definitions robot yaml conda workspace #{@robot.name}"
+          },
+          {
+            title: "Workspace inventory",
+            meta: "Jump to the live file inventory for #{@robot.name}",
+            path: robot_path(@robot.name, anchor: "workspace-inventory"),
+            shortcut: "6",
+            keywords: "workspace inventory files #{@robot.name} upload"
+          },
+          {
+            title: "Upload bundle",
+            meta: "Stage a new bundle while this workspace is open",
+            path: hololib_zips_path(anchor: "upload-bundle"),
+            shortcut: "7",
+            keywords: "upload bundle import hololib zip archive intake"
+          }
+        ] %>
+      <% end %>
+      <% current_jump_item = jump_items.find { |item| current_page?(item[:path]) } || jump_items.first %>
+    <% end %>
+
     <div class="app-shell">
       <header class="top-bar">
         <div class="top-bar__lane top-bar__lane--left">
@@ -42,22 +124,146 @@
         </div>
 
         <% if authenticated? %>
-          <nav class="top-bar__nav top-bar__nav--omakase" aria-label="Primary">
-            <%= nav_link_to "Dashboard", root_path %>
-            <%= nav_link_to "Robots", robots_path %>
-            <%= nav_link_to "Catalogs", catalogs_path %>
-            <%= nav_link_to "Hololib ZIPs", hololib_zips_path %>
-            <button
-              type="button"
-              class="nav-link nav-link--theme"
-              data-theme-target="toggle"
-              data-action="theme#toggle"
-              aria-label="Toggle color mode"
-              aria-pressed="false"
+          <div
+            class="top-bar__menu"
+            data-controller="omakase-menu"
+            data-action="keydown.esc@document->omakase-menu#close keydown.j@document->omakase-menu#openFromHotkey keydown.meta+j@document->omakase-menu#openFromHotkey keydown.ctrl+j@document->omakase-menu#openFromHotkey"
+          >
+            <div class="omakase-center">
+              <button
+                type="button"
+                class="omakase-trigger"
+                data-omakase-menu-target="trigger"
+                data-action="click->omakase-menu#toggle"
+                title="Open jump menu (J)"
+              >
+                <span class="omakase-trigger-dot" aria-hidden="true"></span>
+                <span class="omakase-trigger-label">Jump anywhere</span>
+                <kbd class="omakase-kbd">J</kbd>
+              </button>
+
+              <span class="omakase-context-pill" title="Current section">
+                <span class="omakase-context-label">Focus</span>
+                <strong><%= current_jump_item[:title] %></strong>
+              </span>
+            </div>
+
+            <dialog
+              class="omakase-dialog"
+              tabindex="-1"
+              data-omakase-menu-target="dialog"
+              data-action="click->omakase-menu#backdropClose close->omakase-menu#afterClose"
             >
-              Dark mode
-            </button>
-          </nav>
+              <div class="omakase-dialog-shell">
+                <header class="omakase-dialog-header">
+                  <div class="omakase-dialog-copy">
+                    <p class="omakase-dialog-kicker">Rails RCC Remote</p>
+                    <h2 class="omakase-dialog-title">Jump anywhere</h2>
+                    <p class="omakase-dialog-note">Use number shortcuts or start typing to move between RCC surfaces and operator actions.</p>
+                  </div>
+
+                  <div class="omakase-dialog-close">
+                    <button type="button" class="omakase-icon-btn" data-action="click->omakase-menu#close" title="Close menu (Esc)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M18 6 6 18M6 6l12 12"/>
+                      </svg>
+                    </button>
+                    <kbd class="omakase-kbd">Esc</kbd>
+                  </div>
+                </header>
+
+                <div class="omakase-filter-wrap">
+                  <input
+                    class="omakase-filter-input"
+                    type="search"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    placeholder="Filter surfaces and actions..."
+                    data-omakase-menu-target="filterInput"
+                    data-action="input->omakase-menu#filter keydown->omakase-menu#submitFilter"
+                  >
+                </div>
+
+                <div class="omakase-command-hub">
+                  <section class="omakase-menu-section omakase-home-column" data-omakase-menu-target="section">
+                    <div class="omakase-section-heading">Surfaces</div>
+                    <% jump_items.each do |item| %>
+                      <%= link_to item[:path],
+                                  class: "omakase-home-tile #{'is-active' if item == current_jump_item}",
+                                  data: {
+                                    omakase_menu_target: "item",
+                                    omakase_menu_text_value: "#{item[:title]} #{item[:meta]} #{item[:keywords]}",
+                                    omakase_menu_shortcut_value: item[:shortcut]
+                                  } do %>
+                        <span class="omakase-home-tile-copy">
+                          <span class="omakase-home-tile-title"><%= item[:title] %></span>
+                          <span class="omakase-home-tile-meta"><%= item[:meta] %></span>
+                        </span>
+                          <kbd class="omakase-kbd"><%= item[:shortcut] %></kbd>
+                      <% end %>
+                    <% end %>
+                  </section>
+
+                  <div class="omakase-menu-column">
+                    <section class="omakase-menu-section" data-omakase-menu-target="section">
+                      <div class="omakase-section-heading">Current flow</div>
+                      <div class="omakase-menu-list">
+                        <% jump_action_items.each do |item| %>
+                          <%= link_to item[:path],
+                                      class: "omakase-menu-item",
+                                      data: {
+                                        omakase_menu_target: "item",
+                                        omakase_menu_text_value: "#{item[:title]} #{item[:meta]} #{item[:keywords]}",
+                                        omakase_menu_shortcut_value: item[:shortcut]
+                                      } do %>
+                            <span class="omakase-menu-item-copy">
+                              <span class="omakase-menu-item-title"><%= item[:title] %></span>
+                              <span class="omakase-menu-item-meta"><%= item[:meta] %></span>
+                            </span>
+                            <kbd class="omakase-kbd"><%= item[:shortcut] %></kbd>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    </section>
+
+                    <section class="omakase-menu-section" data-omakase-menu-target="section">
+                      <div class="omakase-section-heading">Session</div>
+                      <div class="omakase-menu-list">
+                        <button
+                          type="button"
+                          class="omakase-menu-item"
+                          data-action="theme#toggle"
+                          data-omakase-menu-target="item"
+                          data-omakase-menu-text-value="toggle theme dark mode light mode appearance"
+                        >
+                          <span class="omakase-menu-item-copy">
+                            <span class="omakase-menu-item-title">Toggle theme</span>
+                            <span class="omakase-menu-item-meta">Switch between the daylight and night shift layouts.</span>
+                          </span>
+                        </button>
+
+                        <%= link_to session_path,
+                                    class: "omakase-menu-item",
+                                    data: {
+                                      turbo_method: :delete,
+                                      omakase_menu_target: "item",
+                                      omakase_menu_text_value: "sign out logout end session"
+                                    } do %>
+                          <span class="omakase-menu-item-copy">
+                            <span class="omakase-menu-item-title">Log out</span>
+                            <span class="omakase-menu-item-meta">End the current operator session on this device.</span>
+                          </span>
+                        <% end %>
+                      </div>
+                    </section>
+                  </div>
+                </div>
+
+                <p class="omakase-empty" hidden data-omakase-menu-target="empty">Nothing matches that filter.</p>
+              </div>
+            </dialog>
+          </div>
         <% end %>
 
         <div class="top-bar__lane top-bar__lane--right">

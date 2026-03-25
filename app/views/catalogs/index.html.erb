@@ -17,13 +17,14 @@
 
 <%= render "shared/page_header",
            kicker: "Catalog workspace",
-           title: "Holotree catalogs",
-           subtitle: "Inspect the latest snapshot, then rebuild it when robot definitions change.",
+           title: "Catalog snapshots",
+           subtitle: "Inspect the latest holotree snapshot, then rebuild it when workspace definitions change.",
            status_text: @catalog_error.present? ? "Needs attention" : "Ready",
            status_class: @catalog_error.present? ? "error" : "ok",
            header_action: rebuild_action,
            note: "Snapshot source #{@catalog_snapshot_source.to_s.upcase}#{@catalog_snapshot_at.present? ? " updated #{formatted_status_timestamp(@catalog_snapshot_at)}" : ""}",
            section_attrs: {
+             id: "rebuild-catalogs",
              data: {
                controller: "catalog-rebuild",
                "catalog-rebuild-refresh-url-value": catalogs_path
@@ -50,7 +51,7 @@
 
 <section class="stats-grid">
   <%= render "dashboard/stat_card",
-             label: "Catalogs",
+             label: "Snapshot rows",
              value: @catalogs.length,
              hint: @catalogs.empty? ? "No snapshot loaded yet" : "Ready for inspection",
              state_class: @catalogs.empty? ? "warning" : "ok" %>
@@ -67,8 +68,8 @@
 </section>
 
 <%= render "shared/page_section",
-           title: "Latest holotree catalog snapshot",
-           meta: "Wide-format view of the current catalog inventory." do %>
+           title: "Latest holotree snapshot",
+           meta: "Wide-format view of the current blueprint inventory." do %>
   <% if @catalogs.empty? %>
     <%= render "shared/empty_state", message: "No catalogs found. Create robots or upload ZIP files first." %>
   <% else %>

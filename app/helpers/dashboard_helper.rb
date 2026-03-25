@@ -28,9 +28,9 @@ module DashboardHelper
 
   def dashboard_resource_chips(overview)
     [
-      { label: "#{overview[:robots_count]} robot(s)", state_class: overview[:robots_count].positive? ? "ok" : "warning" },
-      { label: "#{overview[:catalogs_count]} catalog(s)", state_class: overview[:catalogs_count].positive? ? "ok" : "warning" },
-      { label: "#{overview[:zips_count]} ZIP archive(s)", state_class: overview[:zips_count].positive? ? "ok" : "warning" },
+      { label: "#{overview[:robots_count]} workspace(s)", state_class: overview[:robots_count].positive? ? "ok" : "warning" },
+      { label: "#{overview[:catalogs_count]} catalog snapshot(s)", state_class: overview[:catalogs_count].positive? ? "ok" : "warning" },
+      { label: "#{overview[:zips_count]} import bundle(s)", state_class: overview[:zips_count].positive? ? "ok" : "warning" },
       { label: "#{overview[:holotree_spaces]} holotree space(s)", state_class: nil }
     ]
   end
@@ -38,10 +38,10 @@ module DashboardHelper
   def dashboard_metrics(overview)
     [
       { label: "RCC remote", value: status_label(overview[:rcc_running]), hint: "Execution mode: #{overview[:rcc_mode]}", state_class: overview[:rcc_running] ? "ok" : "error" },
-      { label: "Robots", value: overview[:robots_count], hint: overview[:robots_count].zero? ? "No robots yet" : "Ready for catalog builds", state_class: overview[:robots_count].zero? ? "warning" : "ok" },
+      { label: "Workspaces", value: overview[:robots_count], hint: overview[:robots_count].zero? ? "No workspaces yet" : "Ready for catalog builds", state_class: overview[:robots_count].zero? ? "warning" : "ok" },
       { label: "Catalogs", value: overview[:catalogs_count], hint: age_in_days_label(overview[:newest_catalog_age_days]), state_class: overview[:catalogs_count].zero? ? "warning" : "ok" },
       { label: "Holotree spaces", value: overview[:holotree_spaces], hint: "#{overview[:active_blueprints]} active blueprint(s)", state_class: overview[:holotree_spaces].zero? ? "warning" : "ok" },
-      { label: "Catalog footprint", value: human_bytes(overview[:catalog_total_bytes]), hint: overview[:zips_count].zero? ? "No ZIP archives uploaded" : "#{overview[:zips_count]} ZIP archive(s) available", state_class: overview[:catalog_total_bytes].to_i.positive? ? "ok" : "warning" },
+      { label: "Catalog footprint", value: human_bytes(overview[:catalog_total_bytes]), hint: overview[:zips_count].zero? ? "No bundles uploaded" : "#{overview[:zips_count]} import bundle(s) available", state_class: overview[:catalog_total_bytes].to_i.positive? ? "ok" : "warning" },
       { label: "RCC version", value: overview[:rcc_version], hint: overview[:rcc_available] ? "Binary detected" : "Binary unavailable", state_class: overview[:rcc_available] ? "ok" : "error" },
       { label: "Config profile", value: overview[:settings_profile], hint: "settings #{overview[:settings_version]}", state_class: "ok" }
     ]
@@ -64,10 +64,36 @@ module DashboardHelper
     [
       { state_class: overview[:rcc_running] ? "ok" : "error", message: "RCC remote process is #{overview[:rcc_running] ? "reachable" : "not reachable"}." },
       { state_class: overview[:rcc_available] ? "ok" : "error", message: "RCC binary is #{overview[:rcc_available] ? "available" : "missing"} for command execution." },
-      { state_class: overview[:robots_count].positive? ? "ok" : "warning", message: overview[:robots_count].positive? ? "#{overview[:robots_count]} robot definition(s) are present." : "No robot definitions are present yet." },
+      { state_class: overview[:robots_count].positive? ? "ok" : "warning", message: overview[:robots_count].positive? ? "#{overview[:robots_count]} workspace definition(s) are present." : "No workspace definitions are present yet." },
       { state_class: overview[:catalogs_count].positive? ? "ok" : "warning", message: overview[:catalogs_count].positive? ? "#{overview[:catalogs_count]} catalog(s) are available." : "No catalogs available. Run a rebuild." },
       { state_class: overview[:holotree_spaces].positive? ? "ok" : "warning", message: overview[:holotree_spaces].positive? ? "#{overview[:holotree_spaces]} holotree space(s) are available." : "No holotree spaces currently available." },
       { state_class: overview[:catalog_total_bytes].to_i.positive? ? "ok" : "warning", message: catalog_footprint }
+    ]
+  end
+
+  def dashboard_flow_steps(overview)
+    [
+      {
+        title: "Stage workspaces",
+        detail: overview[:robots_count].positive? ? "#{overview[:robots_count]} workspace(s) are ready for file review, YAML edits, or bundle staging." : "No workspace is staged yet. Create one before you rebuild catalogs.",
+        href: robots_path,
+        cta: "Open workspaces",
+        state_class: overview[:robots_count].positive? ? "ok" : "warning"
+      },
+      {
+        title: "Refresh catalogs",
+        detail: overview[:catalogs_count].positive? ? "Current snapshot age: #{age_in_days_label(overview[:newest_catalog_age_days])}." : "No catalog snapshot is loaded. Rebuild after workspace changes land.",
+        href: catalogs_path(anchor: "rebuild-catalogs"),
+        cta: "Review catalogs",
+        state_class: overview[:catalogs_count].positive? ? "ok" : "warning"
+      },
+      {
+        title: "Import bundles",
+        detail: overview[:zips_count].positive? ? "#{overview[:zips_count]} bundle(s) are waiting in the intake lane." : "No bundles are queued. Upload one when you need to hydrate the remote.",
+        href: hololib_zips_path(anchor: "upload-bundle"),
+        cta: "Open imports",
+        state_class: overview[:zips_count].positive? ? "ok" : "warning"
+      }
     ]
   end
 end

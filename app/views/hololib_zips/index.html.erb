@@ -1,16 +1,16 @@
-<% content_for :title, "Hololib Zips | Rails RCC Remote" %>
+<% content_for :title, "Imports | Rails RCC Remote" %>
 
 <%= render "shared/page_header",
-           kicker: "Bundle workspace",
-           title: "Hololib ZIP files",
-           subtitle: "Upload prebuilt bundles, import them into RCC, and remove anything stale.",
-           status_text: "#{@zips.length} ZIP archive(s)",
+           kicker: "Import workspace",
+           title: "Bundle imports",
+           subtitle: "Upload bundle archives, import them into RCC, and keep the intake lane clean.",
+           status_text: "#{@zips.length} import bundle(s)",
            status_class: @zips.empty? ? "error" : "ok",
            note: "Only .zip files are accepted on upload." %>
 
 <section class="stats-grid">
   <%= render "dashboard/stat_card",
-             label: "ZIP archives",
+             label: "Import bundles",
              value: @zips.length,
              hint: @zips.empty? ? "No bundles uploaded yet" : "Ready to import or delete",
              state_class: @zips.empty? ? "warning" : "ok" %>
@@ -22,19 +22,48 @@
 </section>
 
 <%= render "shared/page_section",
-           title: "Upload ZIP",
+           section_attrs: { id: "upload-bundle" },
+           title: "Upload bundle",
            meta: "Choose one bundle. It will be saved and imported immediately." do %>
   <%= form_with url: hololib_zips_path, method: :post, multipart: true, class: "form-row" do %>
     <%= file_field_tag :file, class: "input", required: true, accept: ".zip" %>
-    <%= submit_tag "Upload ZIP", class: "button button-primary" %>
+    <%= submit_tag "Upload bundle", class: "button button-primary" %>
   <% end %>
 <% end %>
 
 <%= render "shared/page_section",
-           title: "Uploaded bundles",
+           title: "Import cadence",
+           meta: "The intake loop is simple: receive, import, then clean up stale archives." do %>
+  <ol class="ops-flow ops-flow--compact">
+    <li class="ops-step <%= @zips.empty? ? "warning" : "ok" %>">
+      <div class="ops-step__index">1</div>
+      <div class="ops-step__copy">
+        <h3 class="ops-step__title">Receive the archive</h3>
+        <p class="ops-step__detail">Upload a single bundle when you need to hydrate the remote with a new RCC package set.</p>
+      </div>
+    </li>
+    <li class="ops-step ok">
+      <div class="ops-step__index">2</div>
+      <div class="ops-step__copy">
+        <h3 class="ops-step__title">Import into RCC</h3>
+        <p class="ops-step__detail">Uploads are handed to RCC immediately, so this page is primarily the operator intake lane.</p>
+      </div>
+    </li>
+    <li class="ops-step <%= @zips.empty? ? "warning" : "ok" %>">
+      <div class="ops-step__index">3</div>
+      <div class="ops-step__copy">
+        <h3 class="ops-step__title">Clear stale intake</h3>
+        <p class="ops-step__detail">Delete old bundle archives once the remote state is where you want it.</p>
+      </div>
+    </li>
+  </ol>
+<% end %>
+
+<%= render "shared/page_section",
+           title: "Import inventory",
            meta: "#{@zips.length} bundle(s) currently stored for import." do %>
   <% if @zips.empty? %>
-    <%= render "shared/empty_state", message: "No ZIP files found. Upload one to start an import." %>
+    <%= render "shared/empty_state", message: "No bundle archives found. Upload one to start an import." %>
   <% else %>
     <div class="list">
       <%= render partial: "zip", collection: @zips, as: :zip %>

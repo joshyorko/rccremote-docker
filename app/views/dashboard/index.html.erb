@@ -1,12 +1,12 @@
-<% content_for :title, "Dashboard | Rails RCC Remote" %>
+<% content_for :title, "Overview | Rails RCC Remote" %>
 <% overview = dashboard_overview(@status) %>
 
 <section class="panel dashboard-hero">
   <div class="dashboard-hero__copy">
-    <p class="dashboard-kicker">Operations overview</p>
-    <h1 class="dashboard-hero__title">System status</h1>
+    <p class="dashboard-kicker">Operator overview</p>
+    <h1 class="dashboard-hero__title">Runtime overview</h1>
     <p class="dashboard-hero__subtitle">
-      Keep robot workspaces, catalog snapshots, and bundle imports in one live control surface.
+      Keep workspace definitions, catalog snapshots, and import intake aligned with the live RCC runtime.
     </p>
 
     <div class="chip-row dashboard-hero__chips">
@@ -39,26 +39,22 @@
   <article class="panel dashboard-actions">
     <div class="panel-header">
       <div>
-        <h2 class="panel-title">Quick actions</h2>
-        <p class="panel-meta">Direct entry points for the tasks operators repeat most often.</p>
+        <h2 class="panel-title">Operator cadence</h2>
+        <p class="panel-meta">The three surfaces that usually move together during an RCC change window.</p>
       </div>
     </div>
-    <div class="action-list">
-      <%= link_to robots_path, class: "action-tile action-tile--primary" do %>
-        <strong>Manage robots</strong>
-        <span><%= overview[:robots_count] %> robot(s) ready for upload, review, or cleanup.</span>
+    <ol class="ops-flow">
+      <% dashboard_flow_steps(overview).each_with_index do |step, index| %>
+        <li class="ops-step <%= step[:state_class] %>">
+          <div class="ops-step__index"><%= index + 1 %></div>
+          <div class="ops-step__copy">
+            <h3 class="ops-step__title"><%= step[:title] %></h3>
+            <p class="ops-step__detail"><%= step[:detail] %></p>
+          </div>
+          <%= link_to step[:cta], step[:href], class: "ops-step__link" %>
+        </li>
       <% end %>
-
-      <%= link_to catalogs_path, class: "action-tile" do %>
-        <strong>Rebuild catalogs</strong>
-        <span><%= overview[:catalogs_count] %> catalog snapshot(s) available for inspection.</span>
-      <% end %>
-
-      <%= link_to hololib_zips_path, class: "action-tile" do %>
-        <strong>Import ZIP archives</strong>
-        <span><%= overview[:zips_count] %> ZIP archive(s) staged for import or deletion.</span>
-      <% end %>
-    </div>
+    </ol>
   </article>
 
   <article class="panel dashboard-telemetry">

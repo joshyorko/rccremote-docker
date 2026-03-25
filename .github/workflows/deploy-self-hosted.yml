@@ -23,13 +23,71 @@ on:
         description: Existing image tag to deploy; defaults to sha-<current commit>
         required: false
         type: string
+  workflow_call:
+    inputs:
+      targets_json:
+        description: JSON array of Kamal targets to deploy in order
+        required: true
+        type: string
+      action:
+        description: Kamal action to run
+        required: false
+        default: deploy
+        type: string
+      version:
+        description: Existing image tag to deploy; defaults to sha-<current commit>
+        required: false
+        default: ""
+        type: string
 
 concurrency:
   group: deploy-rcc-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      targets_json: ${{ steps.vars.outputs.targets_json }}
+      action: ${{ steps.vars.outputs.action }}
+      version: ${{ steps.vars.outputs.version }}
+    steps:
+      - name: Resolve deploy inputs
+        id: vars
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_TARGET: ${{ github.event.inputs.target || '' }}
+          MANUAL_ACTION: ${{ github.event.inputs.action || '' }}
+          MANUAL_VERSION: ${{ github.event.inputs.version || '' }}
+          CALLED_TARGETS_JSON: ${{ inputs.targets_json || '' }}
+          CALLED_ACTION: ${{ inputs.action || '' }}
+          CALLED_VERSION: ${{ inputs.version || '' }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "workflow_call" ]; then
+            targets_json="${CALLED_TARGETS_JSON}"
+            action="${CALLED_ACTION:-deploy}"
+            version="${CALLED_VERSION:-}"
+          else
+            target="${MANUAL_TARGET:-admin}"
+            targets_json="[\"${target}\"]"
+            action="${MANUAL_ACTION:-deploy}"
+            version="${MANUAL_VERSION:-}"
+          fi
+
+          if [ -z "$version" ]; then
+            version="sha-${GITHUB_SHA::7}"
+          fi
+
+          printf 'targets_json=%s\n' "$targets_json" >> "$GITHUB_OUTPUT"
+          printf 'action=%s\n' "$action" >> "$GITHUB_OUTPUT"
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
   deploy:
+    name: Deploy ${{ matrix.target }}
+    needs: prepare
     runs-on:
       - self-hosted
       - linux
@@ -40,6 +98,11 @@ jobs:
     permissions:
       contents: read
       packages: read
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        target: ${{ fromJSON(needs.prepare.outputs.targets_json) }}
 
     steps:
       - name: Checkout
@@ -126,12 +189,12 @@ jobs:
       - name: Wait for published image tag
         shell: bash
         env:
-          TARGET: ${{ github.event.inputs.target || 'admin' }}
-          VERSION_INPUT: ${{ github.event.inputs.version || '' }}
+          TARGET: ${{ matrix.target }}
+          VERSION_INPUT: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
 
-          version="${VERSION_INPUT:-sha-${GITHUB_SHA::7}}"
+          version="${VERSION_INPUT}"
           case "$TARGET" in
             admin) image_ref="ghcr.io/joshyorko/rccremote-docker-admin:${version}" ;;
             rccremote) image_ref="ghcr.io/joshyorko/rccremote-docker-rccremote:${version}" ;;
@@ -169,9 +232,9 @@ jobs:
       - name: Run Kamal on runner
         shell: bash
         env:
-          TARGET: ${{ github.event.inputs.target || 'admin' }}
-          ACTION: ${{ github.event.inputs.action || 'deploy' }}
-          VERSION_INPUT: ${{ github.event.inputs.version || '' }}
+          TARGET: ${{ matrix.target }}
+          ACTION: ${{ needs.prepare.outputs.action }}
+          VERSION_INPUT: ${{ needs.prepare.outputs.version }}
           KAMAL_REGISTRY_PASSWORD: ${{ secrets.KAMAL_REGISTRY_PASSWORD }}
           ADMIN_CLOUDFLARED_TOKEN: ${{ secrets.ADMIN_CLOUDFLARED_TOKEN }}
           RCCREMOTE_CLOUDFLARED_TOKEN: ${{ secrets.RCCREMOTE_CLOUDFLARED_TOKEN }}
@@ -187,7 +250,7 @@ jobs:
             . "$fallback_file"
           fi
           export ADMIN_CLOUDFLARED_TOKEN RCCREMOTE_CLOUDFLARED_TOKEN
-          version="${VERSION_INPUT:-sha-${GITHUB_SHA::7}}"
+          version="${VERSION_INPUT}"
 
           case "$TARGET" in
             admin) CONFIG_FILE="config/deploy.yml" ;;

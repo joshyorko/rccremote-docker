@@ -8,7 +8,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  prepare:
+    name: Resolve release tag
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.vars.outputs.short_sha }}
+    steps:
+      - name: Compute short SHA tag
+        id: vars
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "short_sha=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: prepare
     name: Build and push ${{ matrix.target }} (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
@@ -88,8 +102,10 @@ jobs:
           push-to-registry: false
 
   manifest:
+    needs:
+      - prepare
+      - build
     name: Create release tag for ${{ matrix.target }}
-    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -118,7 +134,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          short_sha="sha-${GITHUB_SHA::7}"
           docker buildx imagetools create \
-            --tag "${{ matrix.image }}:${short_sha}" \
-            "${{ matrix.image }}:${short_sha}-amd64"
+            --tag "${{ matrix.image }}:${{ needs.prepare.outputs.short_sha }}" \
+            "${{ matrix.image }}:${{ needs.prepare.outputs.short_sha }}-amd64"
+
+  deploy:
+    name: Handoff to Kamal deploy
+    needs:
+      - prepare
+      - manifest
+    uses: ./.github/workflows/deploy-self-hosted.yml
+    with:
+      targets_json: '["admin","rccremote"]'
+      action: deploy
+      version: ${{ needs.prepare.outputs.short_sha }}
+    secrets: inherit

@@ -1,9 +1,9 @@
-<% content_for :title, "Edit Core Files #{@robot.name} | Rails RCC Remote" %>
+<% content_for :title, "Edit Workspace Files #{@robot.name} | Rails RCC Remote" %>
 
 <%= render "shared/page_header",
-           kicker: "Robot editor",
-           title: "Edit core files: #{@robot.name}",
-           subtitle: "Update the manifest and environment definition together so the workspace stays consistent.",
+           kicker: "Workspace editor",
+           title: "Edit core definitions: #{@robot.name}",
+           subtitle: "Update the manifest and environment definition together so this workspace stays runnable.",
            header_action: link_to("Back", robot_path(@robot.name), class: "button") %>
 
 <%= render "shared/page_section",

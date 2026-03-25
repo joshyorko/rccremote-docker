@@ -7,8 +7,9 @@
       </div>
     </div>
     <div class="button-row">
-      <%= link_to "View", robot_path(robot.name), class: "button" %>
-      <%= button_to "Delete", robot_path(robot.name), method: :delete, class: "button button-danger", form: { class: "inline-form" }, data: { turbo_confirm: "Delete robot #{robot.name}?" } %>
+      <%= link_to "Open", robot_path(robot.name), class: "button" %>
+      <%= link_to "Edit core files", edit_files_robot_path(robot.name), class: "button button-primary" %>
+      <%= button_to "Delete", robot_path(robot.name), method: :delete, class: "button button-danger", form: { class: "inline-form" }, data: { turbo_confirm: "Delete workspace #{robot.name}?" } %>
     </div>
   </div>
 

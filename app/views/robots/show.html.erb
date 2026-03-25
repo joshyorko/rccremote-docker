@@ -1,13 +1,19 @@
-<% content_for :title, "Robot #{@robot.name} | Rails RCC Remote" %>
+<% content_for :title, "Workspace #{@robot.name} | Rails RCC Remote" %>
 <% core_files_present = [ @robot.has_robot_yaml, @robot.has_conda_yaml ].count(true) %>
+<% header_actions = capture do %>
+  <div class="button-row">
+    <%= link_to "Back to workspaces", robots_path, class: "button" %>
+    <%= link_to "Edit core files", edit_files_robot_path(@robot.name), class: "button button-primary" %>
+  </div>
+<% end %>
 
 <%= render "shared/page_header",
-           kicker: "Robot detail",
-           title: "Robot: #{@robot.name}",
-           subtitle: "Review the workspace root, core files, and inventory before making changes.",
+           kicker: "Workspace detail",
+           title: @robot.name,
+           subtitle: "Review the workspace root, core definitions, and file inventory before you change this execution surface.",
            status_text: @robot.valid_robot? ? "Ready" : "Needs attention",
            status_class: @robot.valid_robot? ? "ok" : "error",
-           header_action: link_to("Back to robots", robots_path, class: "button") %>
+           header_action: header_actions %>
 
 <section class="stats-grid">
   <%= render "dashboard/stat_card",
@@ -26,6 +32,11 @@
              hint: "Declared in the robot definition",
              state_class: @robot.dependencies_count.positive? ? "ok" : "warning" %>
   <%= render "dashboard/stat_card",
+             label: "Local .env",
+             value: @robot.has_env_file ? "Present" : "Missing",
+             hint: "Operator-specific runtime values",
+             state_class: @robot.has_env_file ? "ok" : "warning" %>
+  <%= render "dashboard/stat_card",
              label: "Core files",
              value: "#{core_files_present} of 2",
              hint: "robot.yaml and conda.yaml",
@@ -33,11 +44,11 @@
 </section>
 
 <section class="dashboard-grid dashboard-grid--main">
-  <article class="panel dashboard-actions">
+  <article class="panel dashboard-actions" id="workspace-actions">
     <div class="panel-header">
       <div>
         <h2 class="panel-title">Workspace actions</h2>
-        <p class="panel-meta">Upload files or jump into the core YAML editor.</p>
+        <p class="panel-meta">Use uploads for support files. Use the editor when you need to change execution definitions.</p>
       </div>
     </div>
 
@@ -61,8 +72,8 @@
   <article class="panel dashboard-telemetry">
     <div class="panel-header">
       <div>
-        <h2 class="panel-title">Workspace facts</h2>
-        <p class="panel-meta">The files and paths that define how this robot runs.</p>
+        <h2 class="panel-title">Execution posture</h2>
+        <p class="panel-meta">The paths and readiness signals that decide whether this workspace can run cleanly.</p>
       </div>
     </div>
 
@@ -96,6 +107,7 @@
 </section>
 
 <%= render "shared/page_section",
+           section_attrs: { id: "core-definitions" },
            title: "Core file content",
            meta: "Read both configuration files before editing them in place.",
            header_action: link_to("Edit core files", edit_files_robot_path(@robot.name), class: "button button-primary") do %>
@@ -113,8 +125,9 @@
 <% end %>
 
 <%= render "shared/page_section",
-           title: "All files",
-           meta: "Everything currently stored under this robot workspace." do %>
+           section_attrs: { id: "workspace-inventory" },
+           title: "Workspace inventory",
+           meta: "Everything currently stored under this workspace root." do %>
   <% if @robot.all_files.empty? %>
     <%= render "shared/empty_state", message: "No files found in this workspace yet." %>
   <% else %>

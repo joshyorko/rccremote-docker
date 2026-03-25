@@ -1,45 +1,77 @@
-<% content_for :title, "Robots | Rails RCC Remote" %>
+<% content_for :title, "Workspaces | Rails RCC Remote" %>
+<% complete_workspaces = @robots.count(&:valid_robot?) %>
+<% env_ready_workspaces = @robots.count(&:has_env_file) %>
 
 <%= render "shared/page_header",
-           kicker: "Robot workspace",
-           title: "Robot management",
-           subtitle: "Create robot folders, upload files, and keep definitions aligned with the current runtime.",
-           status_text: "#{@robots.length} robot(s)",
+           kicker: "Workspace control",
+           title: "Workspaces",
+           subtitle: "Create workspace folders, keep core YAMLs clean, and inspect each execution root before you rebuild catalogs.",
+           status_text: "#{@robots.length} workspace(s)",
            status_class: @robots.empty? ? "error" : "ok",
-           note: "Each robot is a folder-backed workspace with its own YAML files." %>
+           note: "Each workspace is folder-backed and should carry its own robot.yaml and conda.yaml." %>
 
 <section class="stats-grid">
   <%= render "dashboard/stat_card",
-             label: "Robot folders",
+             label: "Workspace folders",
              value: @robots.length,
-             hint: @robots.empty? ? "No workspaces created yet" : "Ready for uploads and edits",
+             hint: @robots.empty? ? "No workspaces created yet" : "Ready for uploads, edits, and review",
              state_class: @robots.empty? ? "warning" : "ok" %>
   <%= render "dashboard/stat_card",
-             label: "Valid robots",
-             value: @robots.count(&:valid_robot?),
+             label: "Ready to run",
+             value: complete_workspaces,
              hint: "Definitions with both core files in place",
              state_class: @robots.empty? ? "warning" : (@robots.all?(&:valid_robot?) ? "ok" : "warning") %>
   <%= render "dashboard/stat_card",
-             label: "Robot YAML",
-             value: @robots.count(&:has_robot_yaml),
-             hint: "Files ready to execute",
-             state_class: @robots.count(&:has_robot_yaml).positive? ? "ok" : "warning" %>
+             label: "Env-backed",
+             value: env_ready_workspaces,
+             hint: "Workspace folders that already include a local .env file",
+             state_class: env_ready_workspaces.positive? ? "ok" : "warning" %>
 </section>
 
 <%= render "shared/page_section",
-           title: "Create robot",
+           title: "Workspace posture",
+           meta: "Use this view to decide whether you should edit definitions, add files, or move on to a catalog rebuild." do %>
+  <ol class="ops-flow ops-flow--compact">
+    <li class="ops-step <%= complete_workspaces.positive? ? "ok" : "warning" %>">
+      <div class="ops-step__index">1</div>
+      <div class="ops-step__copy">
+        <h3 class="ops-step__title">Core definitions</h3>
+        <p class="ops-step__detail"><%= complete_workspaces %> workspace(s) currently have both <code>robot.yaml</code> and <code>conda.yaml</code> in place.</p>
+      </div>
+    </li>
+    <li class="ops-step <%= env_ready_workspaces.positive? ? "ok" : "warning" %>">
+      <div class="ops-step__index">2</div>
+      <div class="ops-step__copy">
+        <h3 class="ops-step__title">Local configuration</h3>
+        <p class="ops-step__detail"><%= env_ready_workspaces %> workspace(s) already include a local <code>.env</code> file for operator-specific runtime settings.</p>
+      </div>
+    </li>
+    <li class="ops-step <%= @robots.empty? ? "warning" : "ok" %>">
+      <div class="ops-step__index">3</div>
+      <div class="ops-step__copy">
+        <h3 class="ops-step__title">Next move</h3>
+        <p class="ops-step__detail">Open a workspace when you need to inspect files in place. Rebuild catalogs only after the affected definitions are settled.</p>
+      </div>
+    </li>
+  </ol>
+<% end %>
+
+<%= render "shared/page_section",
+           section_attrs: { id: "create-workspace" },
+           title: "Create workspace",
            meta: "Use a short, filesystem-safe name for the new workspace." do %>
   <%= form_with url: robots_path, method: :post, class: "form-row" do %>
     <%= text_field_tag :name, nil, class: "input", placeholder: "my-robot", required: true %>
-    <%= submit_tag "Create Robot", class: "button button-primary" %>
+    <%= submit_tag "Create workspace", class: "button button-primary" %>
   <% end %>
 <% end %>
 
 <%= render "shared/page_section",
-           title: "Robot inventory",
-           meta: "#{@robots.length} robot(s) available for view, upload, or delete." do %>
+           section_attrs: { id: "workspace-inventory" },
+           title: "Workspace inventory",
+           meta: "#{@robots.length} workspace(s) available for inspection, file upload, or deletion." do %>
   <% if @robots.empty? %>
-    <%= render "shared/empty_state", message: "No robots found yet. Create one to start a workspace." %>
+    <%= render "shared/empty_state", message: "No workspaces found yet. Create one to start shaping a robot definition." %>
   <% else %>
     <div class="list">
       <%= render partial: "robot", collection: @robots %>
