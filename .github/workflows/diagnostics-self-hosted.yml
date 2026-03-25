@@ -115,11 +115,10 @@ jobs:
             -e LINES \
             "$KAMAL_IMAGE" -lc '
               set -euo pipefail
-              export HOME=/tmp/kamal-home
-              mkdir -p "$HOME/.ssh"
-              cp -R /mounted-ssh/. "$HOME/.ssh/"
-              chmod 700 "$HOME/.ssh"
-              find "$HOME/.ssh" -type f -exec chmod 600 {} \;
+              mkdir -p /root/.ssh
+              cp -R /mounted-ssh/. /root/.ssh/
+              chmod 700 /root/.ssh
+              find /root/.ssh -type f -exec chmod 600 {} \;
               git config --global --add safe.directory /workspace
 
               case "$TARGET" in

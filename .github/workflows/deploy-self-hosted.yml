@@ -147,12 +147,11 @@ jobs:
             -e KAMAL_REGISTRY_PASSWORD \
             "$KAMAL_IMAGE" -lc '
               set -euo pipefail
-              export HOME=/tmp/kamal-home
-              mkdir -p "$HOME/.ssh" "$HOME/.docker"
-              cp -R /mounted-ssh/. "$HOME/.ssh/"
-              cp -R /mounted-docker/. "$HOME/.docker/" || true
-              chmod 700 "$HOME/.ssh"
-              find "$HOME/.ssh" -type f -exec chmod 600 {} \;
+              mkdir -p /root/.ssh /root/.docker
+              cp -R /mounted-ssh/. /root/.ssh/
+              cp -R /mounted-docker/. /root/.docker/ || true
+              chmod 700 /root/.ssh
+              find /root/.ssh -type f -exec chmod 600 {} \;
               git config --global --add safe.directory /workspace
 
               case "$TARGET" in
