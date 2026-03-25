@@ -35,6 +35,7 @@ registry:
 # Inject ENV variables into containers (secrets come from .kamal/secrets).
 env:
   secret:
+    - SECRET_KEY_BASE
     - RAILS_MASTER_KEY
     - S3_ACCESS_KEY_ID
     - S3_SECRET_ACCESS_KEY

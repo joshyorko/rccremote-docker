@@ -17,6 +17,7 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 allowed_keys=(
+  SECRET_KEY_BASE
   S3_ACCESS_KEY_ID
   S3_SECRET_ACCESS_KEY
   ADMIN_CLOUDFLARED_TOKEN
@@ -39,6 +40,18 @@ while IFS='=' read -r key value; do
   printf '%s' "$secret_value" | gh secret set "$key" --repo "$REPO"
   echo "synced $key"
 done < <(grep -E '^[A-Z0-9_]+=' "$ENV_FILE")
+
+shared_tunnel_token="$(
+  sed -n 's/^CLOUDFLARED_TOKEN=//p' "$ENV_FILE" 2>/dev/null | head -n 1
+)"
+if [[ -n "$shared_tunnel_token" ]]; then
+  printf '%s' "$shared_tunnel_token" | gh secret set CLOUDFLARED_TOKEN --repo "$REPO"
+  printf '%s' "$shared_tunnel_token" | gh secret set ADMIN_CLOUDFLARED_TOKEN --repo "$REPO"
+  printf '%s' "$shared_tunnel_token" | gh secret set RCCREMOTE_CLOUDFLARED_TOKEN --repo "$REPO"
+  echo "synced CLOUDFLARED_TOKEN"
+  echo "synced ADMIN_CLOUDFLARED_TOKEN"
+  echo "synced RCCREMOTE_CLOUDFLARED_TOKEN"
+fi
 
 if [[ -f "$MASTER_KEY_FILE" ]]; then
   gh secret set RAILS_MASTER_KEY --repo "$REPO" < "$MASTER_KEY_FILE"

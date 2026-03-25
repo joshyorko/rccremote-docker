@@ -26,11 +26,20 @@ Kamal itself runs inside the official `ghcr.io/basecamp/kamal:v2.10.1` container
 Create `.env.kamal.local` in this repo with:
 
 ```bash
+SECRET_KEY_BASE=...
 S3_ACCESS_KEY_ID=...
 S3_SECRET_ACCESS_KEY=...
+CLOUDFLARED_TOKEN=...
+```
+
+If you want separate Cloudflare tunnels later, you can use:
+
+```bash
 ADMIN_CLOUDFLARED_TOKEN=...
 RCCREMOTE_CLOUDFLARED_TOKEN=...
 ```
+
+When only `CLOUDFLARED_TOKEN` is present, the admin and `rccremote` targets both reuse it.
 
 Then sync GitHub repo secrets with:
 
@@ -40,8 +49,10 @@ script/sync-github-secrets-from-kamal-env.sh joshyorko/rccremote-docker
 
 This pushes:
 
+- `SECRET_KEY_BASE`
 - `S3_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY`
+- `CLOUDFLARED_TOKEN`
 - `ADMIN_CLOUDFLARED_TOKEN`
 - `RCCREMOTE_CLOUDFLARED_TOKEN`
 - `KAMAL_REGISTRY_PASSWORD` from `KAMAL_REGISTRY_PASSWORD` or `gh auth token`
