@@ -119,6 +119,8 @@ jobs:
               cp -R /mounted-ssh/. /root/.ssh/
               chmod 700 /root/.ssh
               find /root/.ssh -type f -exec chmod 600 {} \;
+              ssh-keygen -R 10.10.10.106 -f /root/.ssh/known_hosts >/dev/null 2>&1 || true
+              ssh-keyscan 10.10.10.106 >> /root/.ssh/known_hosts 2>/dev/null
               git config --global --add safe.directory /workspace
 
               case "$TARGET" in
