@@ -23,12 +23,14 @@ jobs:
         include:
           - target: admin
             image: ghcr.io/joshyorko/rccremote-docker-admin
+            service: rccremote_docker
             dockerfile: Dockerfile
             runner: ubuntu-latest
             platform: linux/amd64
             arch: amd64
           - target: rccremote
             image: ghcr.io/joshyorko/rccremote-docker-rccremote
+            service: rccremote_service
             dockerfile: Dockerfile.rccremote
             runner: ubuntu-latest
             platform: linux/amd64
@@ -71,6 +73,8 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+            service=${{ matrix.service }}
+            role=web
           cache-from: type=gha,scope=${{ matrix.target }}-${{ matrix.platform }}
           cache-to: type=gha,scope=${{ matrix.target }}-${{ matrix.platform }},mode=max,ignore-error=true
           sbom: false
