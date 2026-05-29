@@ -6,7 +6,15 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
-REPO_INPUT="${1:-$(git remote get-url origin | sed -E 's#.*github.com[:/]([^/]+/[^/.]+)(\\.git)?#\1#')}"
+if [[ $# -gt 0 ]]; then
+  REPO_INPUT="$1"
+else
+  remote_url="$(git remote get-url origin 2>/dev/null || true)"
+  REPO_INPUT="${remote_url#git@github.com:}"
+  REPO_INPUT="${REPO_INPUT#https://github.com/}"
+  REPO_INPUT="${REPO_INPUT%.git}"
+fi
+
 REPO="$(gh repo view "$REPO_INPUT" --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || printf '%s' "$REPO_INPUT")"
 ENV_FILE="${ENV_FILE:-.env.kamal.local}"
 MASTER_KEY_FILE="${MASTER_KEY_FILE:-config/master.key}"

@@ -29,6 +29,7 @@ Create `.env.kamal.local` in this repo with:
 SECRET_KEY_BASE=...
 S3_ACCESS_KEY_ID=...
 S3_SECRET_ACCESS_KEY=...
+KAMAL_REGISTRY_PASSWORD=...
 CLOUDFLARED_TOKEN=...
 ```
 
@@ -55,7 +56,7 @@ This pushes:
 - `CLOUDFLARED_TOKEN`
 - `ADMIN_CLOUDFLARED_TOKEN`
 - `RCCREMOTE_CLOUDFLARED_TOKEN`
-- `KAMAL_REGISTRY_PASSWORD` from `KAMAL_REGISTRY_PASSWORD` or `gh auth token`
+- `KAMAL_REGISTRY_PASSWORD` from `KAMAL_REGISTRY_PASSWORD`, `.env.kamal.local`, or `gh auth token`
 
 If [`config/master.key`](../config/master.key) exists locally, the script also syncs `RAILS_MASTER_KEY`.
 
